@@ -1,10 +1,10 @@
-import { Injectable } from '@nestjs/common';
-import si from 'systeminformation';
-import { exec } from 'child_process';
-import net from 'net';
-import { readdirSync, readFileSync, existsSync } from 'fs';
-import { join } from 'path';
-import { SiteInfo } from './dto/server';
+import { Injectable } from "@nestjs/common";
+import si from "systeminformation";
+import { exec } from "child_process";
+import net from "net";
+import { readdirSync, readFileSync, existsSync } from "fs";
+import { join } from "path";
+import { SiteInfo } from "./dto/server";
 @Injectable()
 export class ServerService {
   async getSystemStats() {
@@ -28,40 +28,51 @@ export class ServerService {
   }
 
   async getBandwidth() {
-    if (process.platform !== 'linux') {
+    // Windows / dev fallback
+    if (process.platform !== "linux") {
       const net = await si.networkStats();
 
       const rx = net.reduce((sum, item) => sum + item.rx_bytes, 0);
       const tx = net.reduce((sum, item) => sum + item.tx_bytes, 0);
 
       return {
-        type: 'realtime',
+        type: "realtime",
         download: (rx / 1024 / 1024 / 1024).toFixed(2),
         upload: (tx / 1024 / 1024 / 1024).toFixed(2),
         total: ((rx + tx) / 1024 / 1024 / 1024).toFixed(2),
-        note: 'Windows local realtime only',
+        note: "Windows local realtime only",
       };
     }
 
-    const output = await this.execAsync('vnstat --json');
-    const data = JSON.parse(output);
+    try {
+      const output = await this.execAsync("vnstat --json");
+      const data = JSON.parse(output);
 
-    const iface = data.interfaces[0];
-    const month = iface.traffic.month[0];
+      const iface = data.interfaces[0];
+      const month = iface.traffic.month[0];
 
-    const rx = month.rx / 1024 / 1024 / 1024;
-    const tx = month.tx / 1024 / 1024 / 1024;
+      const rx = month.rx / 1024 / 1024 / 1024;
+      const tx = month.tx / 1024 / 1024 / 1024;
 
-    return {
-      type: 'monthly',
-      download: rx.toFixed(2),
-      upload: tx.toFixed(2),
-      total: (rx + tx).toFixed(2),
-    };
+      return {
+        type: "monthly",
+        download: rx.toFixed(2),
+        upload: tx.toFixed(2),
+        total: (rx + tx).toFixed(2),
+      };
+    } catch (e) {
+      return {
+        type: "unknown",
+        download: "0.00",
+        upload: "0.00",
+        total: "0.00",
+        note: "vnstat not ready yet",
+      };
+    }
   }
 
   async getSecurityStatus() {
-    const isLinux = process.platform === 'linux';
+    const isLinux = process.platform === "linux";
 
     const firewall = isLinux ? await this.getFirewallStatus() : false;
 
@@ -83,9 +94,9 @@ export class ServerService {
 
   async getFirewallStatus() {
     try {
-      const output = await this.execAsync('ufw status');
+      const output = await this.execAsync("ufw status");
 
-      return output.includes('Status: active');
+      return output.includes("Status: active");
     } catch {
       return false;
     }
@@ -101,19 +112,19 @@ export class ServerService {
   }
 
   async getSites(): Promise<SiteInfo[]> {
-    if (process.platform !== 'linux') {
+    if (process.platform !== "linux") {
       return [
         {
-          domain: 'localhost',
-          domains: ['localhost'],
-          type: 'Dev Server',
-          port: 'Local',
+          domain: "localhost",
+          domains: ["localhost"],
+          type: "Dev Server",
+          port: "Local",
           ssl: false,
         },
       ];
     }
 
-    const nginxPath = '/etc/nginx/sites-enabled';
+    const nginxPath = "/etc/nginx/sites-enabled";
 
     if (!existsSync(nginxPath)) return [];
 
@@ -121,12 +132,12 @@ export class ServerService {
     const sites: SiteInfo[] = [];
 
     for (const file of files) {
-      const content = readFileSync(join(nginxPath, file), 'utf-8');
+      const content = readFileSync(join(nginxPath, file), "utf-8");
 
       const serverNameMatch = content.match(/server_name\s+([^;]+);/);
       const domains = serverNameMatch?.[1]
         ?.split(/\s+/)
-        .filter((d) => d && d !== '_') ?? ['unknown'];
+        .filter((d) => d && d !== "_") ?? ["unknown"];
 
       const proxyMatch = content.match(/proxy_pass\s+([^;]+);/);
       const proxy = proxyMatch?.[1]?.trim();
@@ -138,11 +149,11 @@ export class ServerService {
       const root = rootMatch?.[1]?.trim();
 
       const ssl =
-        content.includes('ssl_certificate') ||
-        content.includes('listen 443') ||
-        content.includes('listen [::]:443');
+        content.includes("ssl_certificate") ||
+        content.includes("listen 443") ||
+        content.includes("listen [::]:443");
 
-      let port = 'Static';
+      let port = "Static";
 
       if (portMatch?.[1]) {
         port = `PM2 :${portMatch[1]}`;
@@ -150,20 +161,20 @@ export class ServerService {
         port = `Listen :${listenMatch[1]}`;
       }
 
-      let type = 'Static Website';
+      let type = "Static Website";
 
       if (proxy) {
-        if (port.includes('8000')) type = 'NestJS API';
-        else if (port.includes('3000')) type = 'Nuxt App';
-        else type = 'Reverse Proxy App';
+        if (port.includes("8000")) type = "NestJS API";
+        else if (port.includes("3000")) type = "Nuxt App";
+        else type = "Reverse Proxy App";
       }
 
-      if (content.includes('fastcgi_pass') || content.includes('.php')) {
-        type = 'PHP Website';
+      if (content.includes("fastcgi_pass") || content.includes(".php")) {
+        type = "PHP Website";
       }
 
-      if (root?.includes('dist') || root?.includes('.output')) {
-        type = 'Static / Nuxt Build';
+      if (root?.includes("dist") || root?.includes(".output")) {
+        type = "Static / Nuxt Build";
       }
 
       sites.push({
@@ -186,15 +197,15 @@ export class ServerService {
 
       socket.setTimeout(1000);
 
-      socket.on('connect', () => {
+      socket.on("connect", () => {
         socket.destroy();
         resolve(true);
       });
 
-      socket.on('error', () => resolve(false));
-      socket.on('timeout', () => resolve(false));
+      socket.on("error", () => resolve(false));
+      socket.on("timeout", () => resolve(false));
 
-      socket.connect(port, '127.0.0.1');
+      socket.connect(port, "127.0.0.1");
     });
 
   private execAsync = (cmd: string) =>

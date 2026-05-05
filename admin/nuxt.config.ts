@@ -49,6 +49,9 @@ export default defineNuxtConfig({
       apiBase: "",
     },
   },
+  devServer: {
+    port: 41201,
+  },
   eslint: {
     config: {
       stylistic: {
