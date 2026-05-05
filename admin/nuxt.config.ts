@@ -46,7 +46,7 @@ export default defineNuxtConfig({
   compatibilityDate: "2024-07-11",
   runtimeConfig: {
     public: {
-      apiBase: "",
+      apiBase: 'http://lcpanel-api/api' 
     },
   },
   nitro: {
