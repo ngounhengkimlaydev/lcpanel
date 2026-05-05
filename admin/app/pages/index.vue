@@ -84,9 +84,14 @@
               <h2 class="text-base font-semibold">Resource Monitor</h2>
               <p class="text-sm text-muted">CPU, RAM, disk and bandwidth overview</p>
             </div>
-            <UBadge :color="serverStatus.color" variant="soft">
-              {{ serverStatus.label }}
-            </UBadge>
+            <div class="flex gap-3">
+              <UBadge :color="serverStatus.color" variant="soft">
+                {{ serverStatus.label }}
+              </UBadge>
+              <UBadge :color="socketConnected ? 'success' : 'error'">
+                {{ socketConnected ? 'Live' : 'Disconnected' }}
+              </UBadge>
+            </div>
           </div>
         </template>
 
@@ -219,12 +224,11 @@
 </template>
 
 <script setup lang="ts">
-
 const fetch = useApiFetch()
-
+const { $socket } = useNuxtApp();
 const stats = ref<any>(null)
 const loading = ref(false)
-
+const socketConnected = ref(false)
 const loadStats = async () => {
   loading.value = true
   try {
@@ -248,15 +252,29 @@ const sslExpiringCount = computed(() => {
 const totalSSL = computed(() => {
   return sites.value.filter((s: any) => s.ssl).length
 })
+
+
 onMounted(() => {
   loadStats()
 
-  const timer = setInterval(() => {
-    loadStats()
-  }, 5000)
+  $socket.off("server:status")
 
-  onUnmounted(() => clearInterval(timer))
-})
+  $socket.on("server:status", (data: any) => {
+    stats.value = data;
+  });
+
+  $socket.on("connect", () => {
+    socketConnected.value = true
+  })
+
+  $socket.on("disconnect", () => {
+    socketConnected.value = false
+  })
+});
+
+onUnmounted(() => {
+  $socket.off("server:status");
+});
 
 const statusColor = (value?: number) => {
   if (!value) return 'neutral'

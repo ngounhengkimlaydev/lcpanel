@@ -5,8 +5,10 @@ import net from "net";
 import { readdirSync, readFileSync, existsSync } from "fs";
 import { join } from "path";
 import { SiteInfo } from "./dto/server";
+
 @Injectable()
 export class ServerService {
+ 
   async getSystemStats() {
     const cpu = await si.currentLoad();
     const cpuInfo = await si.cpu();
