@@ -49,6 +49,9 @@ export default defineNuxtConfig({
       apiBase: "",
     },
   },
+  nitro: {
+    preset: "node-server",
+  },
   devServer: {
     port: 41201,
   },
