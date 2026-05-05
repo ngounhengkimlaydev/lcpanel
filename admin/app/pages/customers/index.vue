@@ -1,0 +1,122 @@
+<template>
+  <UDashboardPanel id="customers">
+    <template #header>
+      <UDashboardNavbar title="Customers">
+        <template #right>
+          <UButton
+            icon="i-lucide-user-plus"
+            label="Add Customer"
+            @click="openCreateModal"
+          />
+        </template>
+      </UDashboardNavbar>
+    </template>
+
+    <template #body>
+      <div class="space-y-6">
+        <CustomerStats />
+
+        <UCard>
+          <CustomerToolbar v-model:search="search" v-model:status="status" />
+
+          <CustomerTable
+            :customers="filteredCustomers"
+            @edit="openEditModal"
+          />
+        </UCard>
+
+        <CustomerFormModal
+          v-model:open="isModalOpen"
+          :type="modalType"
+          :customer="selectedCustomer"
+          @submit="handleSubmit"
+        />
+      </div>
+    </template>
+  </UDashboardPanel>
+</template>
+
+<script setup lang="ts">
+import CustomerStats from '~/components/customers/CustomerStats.vue'
+import CustomerTable from '~/components/customers/CustomerTable.vue'
+import CustomerToolbar from '~/components/customers/CustomerToolbar.vue'
+import CustomerFormModal from '~/components/customers/CustomerFormModal.vue'
+import type { Customer } from '~/types'
+
+definePageMeta({
+  middleware: ['super-admin']
+})
+
+
+const search = ref('')
+const status = ref('all')
+
+const isModalOpen = ref(false)
+const modalType = ref<'create' | 'edit'>('create')
+const selectedCustomer = ref<Customer | null>(null)
+
+const customers = ref<Customer[]>([
+  {
+    id: 1,
+    name: 'LTech Digital',
+    email: 'admin@ltech.digital',
+    plan: 'Business',
+    websites: 3,
+    storage: '12.4 GB',
+    status: 'active',
+    created_at: '2026-05-03'
+  },
+  {
+    id: 2,
+    name: 'Nexora Client',
+    email: 'client@nexora.com',
+    plan: 'Basic',
+    websites: 1,
+    storage: '2.1 GB',
+    status: 'suspended',
+    created_at: '2026-05-01'
+  }
+])
+
+const filteredCustomers = computed(() => {
+  return customers.value.filter((item) => {
+    const matchSearch =
+      item.name.toLowerCase().includes(search.value.toLowerCase()) ||
+      item.email.toLowerCase().includes(search.value.toLowerCase())
+
+    const matchStatus = status.value === 'all' || item.status === status.value
+
+    return matchSearch && matchStatus
+  })
+})
+
+function openCreateModal() {
+  modalType.value = 'create'
+  selectedCustomer.value = null
+  isModalOpen.value = true
+}
+
+function openEditModal(customer: Customer) {
+  modalType.value = 'edit'
+  selectedCustomer.value = customer
+  isModalOpen.value = true
+}
+
+function handleSubmit(payload: Customer) {
+  if (modalType.value === 'create') {
+    customers.value.unshift({
+      ...payload,
+      id: Date.now(),
+      created_at: new Date().toISOString().slice(0, 10)
+    })
+  } else {
+    const index = customers.value.findIndex((item) => item.id === payload.id)
+
+    if (index !== -1) {
+      customers.value[index] = payload
+    }
+  }
+
+  isModalOpen.value = false
+}
+</script>

@@ -1,0 +1,87 @@
+# =========================
+# Node / General
+# =========================
+node_modules/
+.pnpm-store/
+.npm/
+.yarn/
+.cache/
+dist/
+build/
+.tmp/
+.temp/
+
+# Logs
+logs/
+*.log
+pnpm-debug.log*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# =========================
+# Environment
+# =========================
+.env
+.env.*
+!.env.example
+
+# =========================
+# Nuxt (admin)
+# =========================
+.output/
+.nuxt/
+.nitro/
+.cache/
+.vercel/
+dist/
+
+# =========================
+# NestJS (core)
+# =========================
+dist/
+coverage/
+
+# =========================
+# OS / Editor
+# =========================
+.DS_Store
+Thumbs.db
+
+# VSCode
+.vscode/*
+!.vscode/extensions.json
+
+# JetBrains
+.idea/
+
+# =========================
+# PM2
+# =========================
+.pm2/
+
+# =========================
+# Uploads / Runtime files
+# =========================
+uploads/
+tmp/
+storage/
+
+# =========================
+# Database / local files
+# =========================
+*.sqlite
+*.db
+
+# =========================
+# SSH / Keys (IMPORTANT)
+# =========================
+*.pem
+*.key
+id_rsa
+id_rsa.pub
+
+# =========================
+# Docker
+# =========================
+docker-data/
