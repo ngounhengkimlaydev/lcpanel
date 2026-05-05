@@ -5,7 +5,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PermissionAction } from '../permission/dto/permission-action.enum';
 import { Permission } from '../permission/permission.decorator';
 
-// @UseGuards(JwtAuthGuard, PermissionGuard)
+@UseGuards(JwtAuthGuard, PermissionGuard)
 @Controller('server')
 export class ServerController {
   static MODULE_KEY = 'dashboard';
@@ -13,7 +13,7 @@ export class ServerController {
   constructor(private readonly serverService: ServerService) {}
 
   @Get()
-  // @Permission(ServerController.MODULE_KEY, PermissionAction.VIEW)
+  @Permission(ServerController.MODULE_KEY, PermissionAction.VIEW)
   async getStats() {
     const system = await this.serverService.getSystemStats();
     const bandwidth = await this.serverService.getBandwidth();
