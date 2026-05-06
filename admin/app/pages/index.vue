@@ -84,14 +84,9 @@
               <h2 class="text-base font-semibold">Resource Monitor</h2>
               <p class="text-sm text-muted">CPU, RAM, disk and bandwidth overview</p>
             </div>
-            <div class="flex gap-3">
-              <UBadge :color="serverStatus.color" variant="soft">
-                {{ serverStatus.label }}
-              </UBadge>
-              <UBadge :color="socketConnected ? 'success' : 'error'">
-                {{ socketConnected ? 'Live' : 'Disconnected' }}
-              </UBadge>
-            </div>
+            <UBadge :color="socketConnected ? 'success' : 'error'" variant="soft">
+              {{ socketConnected ? 'Server Online' : 'Server Offline' }}
+            </UBadge>
           </div>
         </template>
 
@@ -257,24 +252,36 @@ const totalSSL = computed(() => {
 onMounted(() => {
   loadStats()
 
-  $socket.off("server:status")
+  $socket.off('server:status')
+  $socket.off('connect')
+  $socket.off('disconnect')
+  $socket.off('connect_error')
 
-  $socket.on("server:status", (data: any) => {
-    stats.value = data;
-  });
+  socketConnected.value = $socket.connected
 
-  $socket.on("connect", () => {
+  $socket.on('connect', () => {
     socketConnected.value = true
   })
 
-  $socket.on("disconnect", () => {
+  $socket.on('disconnect', () => {
     socketConnected.value = false
   })
-});
+
+  $socket.on('connect_error', () => {
+    socketConnected.value = false
+  })
+
+  $socket.on('server:status', (data: any) => {
+    stats.value = data
+  })
+})
 
 onUnmounted(() => {
-  $socket.off("server:status");
-});
+  $socket.off('server:status')
+  $socket.off('connect')
+  $socket.off('disconnect')
+  $socket.off('connect_error')
+})
 
 const statusColor = (value?: number) => {
   if (!value) return 'neutral'
@@ -283,13 +290,30 @@ const statusColor = (value?: number) => {
   return 'success'
 }
 
-const isServerOnline = computed(() => !!stats.value?.success && !loading.value)
+const isServerOnline = computed(() => {
+  return socketConnected.value && !!stats.value?.success && !loading.value
+})
 
 const serverStatus = computed(() => {
-  if (loading.value) return { label: 'Checking...', color: 'neutral' as const }
-  if (!isServerOnline.value) return { label: 'Server Offline', color: 'error' as const }
-  if (Number(stats.value?.disk ?? 0) >= 95) return { label: 'Critical', color: 'error' as const }
-  if (Number(stats.value?.ram ?? 0) >= 85) return { label: 'Warning', color: 'warning' as const }
+  if (loading.value && !stats.value) {
+    return { label: 'Checking...', color: 'neutral' as const }
+  }
+
+  if (!socketConnected.value) {
+    return { label: 'Server Offline', color: 'error' as const }
+  }
+
+  if (!stats.value?.success) {
+    return { label: 'Server Offline', color: 'error' as const }
+  }
+
+  if (Number(stats.value?.disk ?? 0) >= 95) {
+    return { label: 'Critical', color: 'error' as const }
+  }
+
+  if (Number(stats.value?.ram ?? 0) >= 85) {
+    return { label: 'Warning', color: 'warning' as const }
+  }
 
   return { label: 'Server Online', color: 'success' as const }
 })

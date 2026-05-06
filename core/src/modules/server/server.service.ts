@@ -5,10 +5,9 @@ import net from "net";
 import { readdirSync, readFileSync, existsSync } from "fs";
 import { join } from "path";
 import { SiteInfo } from "./dto/server";
-
+import tls from "node:tls";
 @Injectable()
 export class ServerService {
- 
   async getSystemStats() {
     const cpu = await si.currentLoad();
     const cpuInfo = await si.cpu();
@@ -77,13 +76,16 @@ export class ServerService {
     const isLinux = process.platform === "linux";
 
     const firewall = isLinux ? await this.getFirewallStatus() : false;
-
     const check = isLinux ? this.checkPort.bind(this) : this.checkPortLocal;
 
-    const ssh = await check(22);
-    const http = await check(80);
-    const https = await check(443);
-    const mail = await check(25);
+    const [ssh, http, https, mail, sslHttps, sslMail] = await Promise.all([
+      check(22),
+      check(80),
+      check(443),
+      check(25),
+      this.checkSsl("localhost", 443),
+      this.checkSsl("localhost", 465),
+    ]);
 
     return {
       firewall,
@@ -91,7 +93,31 @@ export class ServerService {
       http,
       https,
       mail,
+      ssl: {
+        https: sslHttps,
+        mail: sslMail,
+      },
     };
+  }
+
+  async checkSsl(host: string, port: number): Promise<boolean> {
+    return new Promise((resolve) => {
+      const socket = tls.connect(
+        { host, port, rejectUnauthorized: false },
+        () => {
+          const cert = socket.getPeerCertificate();
+          socket.destroy();
+          resolve(!!cert && !socket.authorizationError);
+        },
+      );
+
+      socket.setTimeout(3000);
+      socket.on("timeout", () => {
+        socket.destroy();
+        resolve(false);
+      });
+      socket.on("error", () => resolve(false));
+    });
   }
 
   async getFirewallStatus() {
