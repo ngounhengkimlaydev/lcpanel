@@ -17,6 +17,7 @@ import { UserLogModule } from './modules/user-log/user-log.module';
 import { PermissionModule } from './modules/permission/permission.module';
 import { Reflector } from '@nestjs/core';
 import { ServerModule } from './modules/server/server.module';
+import { ServicesModule } from './modules/services/services.module';
 
 // UsersModule
 @Module({
@@ -39,7 +40,8 @@ import { ServerModule } from './modules/server/server.module';
         TelegramModule,
         UserLogModule,
         PermissionModule,
-        ServerModule
+        ServerModule,
+        ServicesModule
     ],
     controllers: [AppController],
     providers: [AppService, Reflector],

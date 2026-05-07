@@ -201,3 +201,15 @@ export type Plan = {
   emails: number;
   ssl: boolean;
 };
+export type SystemServiceStatus = "running" | "stopped" | "failed" | "unknown";
+
+export interface SystemService {
+  id: number;
+  name: string;
+  description: string;
+  status: SystemServiceStatus;
+  port?: number;
+  uptime: string;
+  memory: string;
+  auto_start: boolean;
+}

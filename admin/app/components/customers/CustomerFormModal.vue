@@ -22,11 +22,11 @@
           </UFormField>
 
           <UFormField label="Websites">
-            <UInput v-model.number="form.websites" type="number" class="w-full" />
+            <UInput v-model.number="form.websites" type="number" class="w-full" disabled/>
           </UFormField>
 
           <UFormField label="Storage">
-            <UInput v-model="form.storage" class="w-full" />
+            <UInput v-model="form.storage" class="w-full" disabled/>
           </UFormField>
 
           <UFormField label="Status">
