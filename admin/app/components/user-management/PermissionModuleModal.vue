@@ -34,16 +34,6 @@
                                 <UInput v-model="form.module_key" icon="i-lucide-code" placeholder="customers"
                                     class="w-full" />
                             </UFormField>
-
-                            <UFormField label="Status">
-                                <USelect v-model="form.status" :items="statusItems" class="w-full" />
-                            </UFormField>
-
-                            <UFormField label="Quick Permission">
-                                <USelectMenu v-model="selectedPermission" :items="permissionOptions" searchable
-                                    placeholder="Select permission to add" class="w-full"
-                                    @update:model-value="addSelectedPermission" />
-                            </UFormField>
                         </div>
 
                         <div class="rounded-2xl border border-default bg-elevated/40 p-4">
@@ -77,9 +67,9 @@
                                 </p>
 
                                 <div class="flex flex-wrap gap-2">
-                                    <UBadge v-for="permission in form.permissions" :key="permission" color="neutral"
-                                        variant="soft" class="font-mono">
-                                        {{ form.module_key }}.{{ permission }}
+                                    <UBadge v-for="permission in form.permissions" :key="permission.permission_name"
+                                        color="neutral" variant="soft" class="font-mono">
+                                        {{ permission.permission_name }}
                                     </UBadge>
                                 </div>
                             </div>
@@ -91,7 +81,7 @@
                 <div class="shrink-0 border-t border-default p-6">
                     <div class="flex items-center justify-between gap-3">
                         <p class="text-xs text-muted">
-                            Example: <span class="font-medium">customers.view</span>
+
                         </p>
 
                         <div class="flex justify-end gap-2">
@@ -129,10 +119,6 @@ const open = defineModel<boolean>('open', { default: false })
 
 const selectedPermission = ref<Option>()
 
-const statusItems = [
-    { label: 'Active', value: 'active' },
-    { label: 'Inactive', value: 'inactive' }
-]
 
 const defaultPermissions: Option[] = [
     { label: 'View', value: 'view' },
@@ -147,14 +133,11 @@ const defaultPermissions: Option[] = [
     { label: 'Upload', value: 'upload' }
 ]
 
-const permissionOptions = defaultPermissions
 
 const form = reactive<ModulePermission>({
     id: 0,
     module_name: '',
     module_key: '',
-    description: '',
-    status: 'active',
     permissions: [],
     created_at: ''
 })
@@ -187,8 +170,6 @@ watch(open, (value) => {
             id: 0,
             module_name: '',
             module_key: '',
-            description: '',
-            status: 'active',
             permissions: [],
             created_at: ''
         })
@@ -196,26 +177,33 @@ watch(open, (value) => {
 })
 
 function hasPermission(permission: string) {
-    return form.permissions.includes(permission)
+    return form.permissions.some(
+        (item) => item.permission_name === permission
+    )
 }
 
 function togglePermission(permission: string) {
-    if (form.permissions.includes(permission)) {
-        form.permissions = form.permissions.filter((item) => item !== permission)
+    const exists = form.permissions.some(
+        (item) => item.permission_name === permission
+    )
+
+    if (exists) {
+        form.permissions = form.permissions.filter(
+            (item) => item.permission_name !== permission
+        )
+
+        form.permissions = form.permissions.map((item, index) => ({
+            ...item,
+            index
+        }))
+
         return
     }
 
-    form.permissions.push(permission)
-}
-
-function addSelectedPermission(value: Option | undefined) {
-    if (!value) return
-
-    if (!form.permissions.includes(value.value)) {
-        form.permissions.push(value.value)
-    }
-
-    selectedPermission.value = undefined
+    form.permissions.push({
+        index: form.permissions.length,
+        permission_name: permission
+    })
 }
 
 function submit() {
@@ -224,4 +212,24 @@ function submit() {
         permissions: [...form.permissions]
     })
 }
+
+function onKeydown(event: KeyboardEvent) {
+    const isSave =
+        (event.ctrlKey || event.metaKey) &&
+        event.key.toLowerCase() === 's'
+
+    if (!isSave) return
+
+    event.preventDefault()
+
+    submit()
+}
+
+onMounted(() => {
+    window.addEventListener('keydown', onKeydown)
+})
+
+onBeforeUnmount(() => {
+    window.removeEventListener('keydown', onKeydown)
+})
 </script>

@@ -42,29 +42,41 @@ definePageMeta({
 })
 
 const previewForm = ref<CreateWebsitePayload>({
+    website_type: 'php',
     domain: '',
     website_name: '',
     document_root: '/var/www/',
+
+    web_server: 'nginx',
     php_version: '8.3',
+    public_path: '/public',
+    queue_driver: 'database',
+
+    proxy_target: '',
+    proxy_port: 3000,
+    websocket: true,
+
+    index_file: 'index.html',
+    spa_fallback: false,
+
     ssl: true,
     force_https: true,
+
     create_database: true,
     database_name: '',
     database_user: '',
     database_password: '',
+
     create_ftp: false,
     ftp_user: '',
     ftp_password: '',
+
     status: 'active'
 })
 
 function handleSubmit(payload: CreateWebsitePayload) {
     previewForm.value = payload
-
     console.log('Create website payload:', payload)
-
-    // later connect API here:
-    // await api.post('/websites', payload)
     navigateTo('/websites')
 }
 </script>

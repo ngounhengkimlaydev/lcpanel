@@ -207,6 +207,7 @@ export class RoleService {
             throw new InternalServerErrorException();
         }
     }
+
     async getRoleModuleLists(roleId: number) {
         const key = `role_module_${roleId}`;
 
@@ -224,7 +225,6 @@ export class RoleService {
                 module: {
                     select: {
                         module_key: true,
-                        featured: true,
                     },
                 },
                 permission: true,
@@ -241,7 +241,6 @@ export class RoleService {
                         role_id: item.role_id,
                         module_id: item.module_id,
                         module_key: item.module.module_key,
-                        featured: item.module.featured,
                         permission_id: item.permission_id,
                         permissions: [],
                     };

@@ -1,23 +1,29 @@
 <template>
     <UDashboardPanel id="permissions">
-        <template #header>
-            <UDashboardNavbar title="Permissions">
-                <template #right>
-                    <UButton icon="i-lucide-key-round" label="Create Module Permission" @click="openCreateModal" />
-                </template>
-            </UDashboardNavbar>
-        </template>
-
-        <template #body>
-            <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <UInput v-model="search" icon="i-lucide-search" placeholder="Search module permission..."
-                    class="w-full sm:max-w-sm" />
-
-                <USelect v-model="status" :items="statusItems" class="w-44" />
+        <template #default>
+            <div class="space-y-6">
+                <UCard>
+                    <template #header>
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-semibold">
+                                Permission
+                            </h3>
+                            <div class="flex space-x-2">
+                                <UButton icon="i-lucide-refresh-cw" color="neutral" variant="outline"
+                                    @click="loadModulePermissions" />
+                                <UButton icon="i-lucide-key-round" label="Create Module Permission"
+                                    @click="openCreateModal" />
+                            </div>
+                        </div>
+                    </template>
+                    <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <UInput v-model="search" icon="i-lucide-search" placeholder="Search module permission..."
+                            class="w-full sm:max-w-sm" />
+                    </div>
+                    <PermissionTable :data="modulePermissions" :columns="columns" :total="total" :page="page"
+                        :page-size="pageSize" @update:page="page = $event" />
+                </UCard>
             </div>
-
-            <UTable :data="filteredModules" :columns="columns" />
-
             <PermissionModuleModal v-model:open="isModalOpen" :type="modalType" :module-permission="selectedModule"
                 @submit="handleSubmit" />
         </template>
@@ -26,113 +32,114 @@
 
 <script setup lang="ts">
 import type { TableColumn, DropdownMenuItem } from '@nuxt/ui'
+import ConfirmModal from '~/components/ConfirmModal.vue'
 import PermissionModuleModal from '~/components/user-management/PermissionModuleModal.vue'
+import PermissionTable from '~/components/user-management/PermissionTable.vue'
+import type { ModulePermission } from '~/types'
 
-
-type ModulePermission = {
-    id: number
-    module_name: string
-    module_key: string
-    description: string
-    status: string
-    permissions: string[]
-    created_at: string
-}
-
-const search = ref('')
-const status = ref('all')
 
 const isModalOpen = ref(false)
 const modalType = ref<'create' | 'edit'>('create')
 const selectedModule = ref<ModulePermission | null>(null)
+const fetch = useApiFetch()
+const overlay = useOverlay()
+const modulePermissions = ref<ModulePermission[]>([])
 
-const modulePermissions = ref<ModulePermission[]>([
-    {
-        id: 1,
-        module_name: 'Customers',
-        module_key: 'customers',
-        description: 'Manage customer accounts and profile access.',
-        status: 'active',
-        permissions: ['view', 'create', 'update', 'delete'],
-        created_at: '2026-05-01'
-    },
-    {
-        id: 2,
-        module_name: 'Invoices',
-        module_key: 'invoices',
-        description: 'Manage billing invoices and payment records.',
-        status: 'active',
-        permissions: ['view', 'create', 'update', 'delete', 'download'],
-        created_at: '2026-05-02'
-    }
-])
+const search = ref('')
+const page = ref(1)
+const pageSize = ref(10)
+const total = ref(0)
 
-const statusItems = [
-    { label: 'All Status', value: 'all' },
-    { label: 'Active', value: 'active' },
-    { label: 'Inactive', value: 'inactive' }
-]
 
-const filteredModules = computed(() => {
-    return modulePermissions.value.filter((item) => {
-        const keyword = search.value.toLowerCase()
-
-        const matchSearch =
-            item.module_name.toLowerCase().includes(keyword) ||
-            item.module_key.toLowerCase().includes(keyword) ||
-            item.description.toLowerCase().includes(keyword)
-
-        const matchStatus = status.value === 'all' || item.status === status.value
-
-        return matchSearch && matchStatus
+const loadModulePermissions = async () => {
+    const res = await fetch.paginate('/module', {
+        page: page.value,
+        table_size: pageSize.value,
+        filter: {
+            search: search.value
+        },
+        sort_by: 'module_name',
+        sort_type: 'asc'
     })
+
+    modulePermissions.value = res?.data ?? []
+    total.value = res?.total ?? res?.pagination?.total ?? 0
+}
+
+const debouncedSearch = useDebounceFn(() => {
+    page.value = 1
+    loadModulePermissions()
+}, 400)
+
+watch(page, () => {
+    loadModulePermissions()
 })
 
+watch(search, () => {
+    debouncedSearch()
+})
+
+onMounted(() => {
+    loadModulePermissions()
+})
+
+
 const columns: TableColumn<ModulePermission>[] = [
+    {
+        accessorKey: 'no',
+        header: 'No.',
+        cell: ({ row }) =>
+            h(
+                'p',
+                { class: 'font-medium text-highlighted' },
+                row.index + 1
+            )
+    },
     {
         accessorKey: 'module_name',
         header: 'Module',
         cell: ({ row }) => h('div', {}, [
             h('p', { class: 'font-medium text-highlighted' }, row.original.module_name),
-            h('p', { class: 'text-sm text-muted' }, row.original.module_key)
+        ])
+    },
+    {
+        accessorKey: 'module_key',
+        header: 'Module Key',
+        cell: ({ row }) => h('div', {}, [
+            h('p', { class: 'font-medium text-highlighted' }, row.original.module_key),
         ])
     },
     {
         accessorKey: 'permissions',
         header: 'Permissions',
-        cell: ({ row }) => h('div', { class: 'flex flex-wrap gap-1.5' },
-            row.original.permissions.slice(0, 4).map((permission) =>
-                h(resolveComponent('UBadge'), {
-                    color: 'primary',
-                    variant: 'soft',
-                    class: 'capitalize'
-                }, {
-                    default: () => permission
-                })
-            ).concat(
-                row.original.permissions.length > 4
-                    ? [
+        cell: ({ row }) =>
+            h(
+                'div',
+                { class: 'flex flex-wrap gap-1.5' },
+                row.original.permissions
+                    .slice(0, 4)
+                    .map((permission) =>
                         h(resolveComponent('UBadge'), {
-                            color: 'neutral',
-                            variant: 'soft'
+                            color: 'primary',
+                            variant: 'soft',
+                            class: 'capitalize'
                         }, {
-                            default: () => `+${row.original.permissions.length - 4}`
+                            default: () => permission.permission_name
                         })
-                    ]
-                    : []
+                    )
+                    .concat(
+                        row.original.permissions.length > 4
+                            ? [
+                                h(resolveComponent('UBadge'), {
+                                    color: 'neutral',
+                                    variant: 'soft'
+                                }, {
+                                    default: () => `+${row.original.permissions.length - 4}`
+                                })
+                            ]
+                            : []
+                    )
             )
-        )
-    },
-    {
-        accessorKey: 'status',
-        header: 'Status',
-        cell: ({ row }) => h(resolveComponent('UBadge'), {
-            color: row.original.status === 'active' ? 'success' : 'neutral',
-            variant: 'soft',
-            class: 'capitalize'
-        }, {
-            default: () => row.original.status
-        })
     },
     { accessorKey: 'created_at', header: 'Created At' },
     {
@@ -146,11 +153,6 @@ const columns: TableColumn<ModulePermission>[] = [
                         icon: 'i-lucide-pencil',
                         onSelect: () => openEditModal(row.original)
                     },
-                    {
-                        label: row.original.status === 'active' ? 'Disable' : 'Enable',
-                        icon: row.original.status === 'active' ? 'i-lucide-ban' : 'i-lucide-check-circle',
-                        onSelect: () => toggleStatus(row.original)
-                    }
                 ],
                 [
                     {
@@ -185,35 +187,61 @@ function openEditModal(module: ModulePermission) {
     isModalOpen.value = true
 }
 
-function handleSubmit(payload: ModulePermission) {
-    if (modalType.value === 'create') {
-        modulePermissions.value.unshift({
-            ...payload,
-            id: Date.now(),
-            created_at: new Date().toISOString().slice(0, 10)
-        })
-    } else {
-        const current = modulePermissions.value.find((item) => item.id === payload.id)
-        if (!current) return
+async function handleSubmit(payload: ModulePermission) {
+    const body = {
+        module_name: payload.module_name,
+        module_key: payload.module_key,
+        permission: payload.permissions
+    }
 
-        current.module_name = payload.module_name
-        current.module_key = payload.module_key
-        current.description = payload.description
-        current.status = payload.status
-        current.permissions = payload.permissions
+    if (modalType.value === 'create') {
+        await fetch.post('/module', body)
+    } else {
+        await fetch.put(`/module/${payload.id}`, body)
     }
 
     isModalOpen.value = false
+    selectedModule.value = null
+
+    await loadModulePermissions()
 }
 
-function toggleStatus(module: ModulePermission) {
-    const current = modulePermissions.value.find((item) => item.id === module.id)
-    if (!current) return
+async function deleteModule(module: ModulePermission) {
 
-    current.status = current.status === 'active' ? 'inactive' : 'active'
-}
+    const modal = overlay.create(ConfirmModal, {
+        props: {
+            title: 'Delete Module',
+            description: `Are you sure you want to delete "${module.module_name}"?`,
+            confirmText: 'Delete',
+            cancelText: 'Cancel',
+            color: 'error'
+        }
+    })
 
-function deleteModule(module: ModulePermission) {
-    modulePermissions.value = modulePermissions.value.filter((item) => item.id !== module.id)
+    const instance = modal.open()
+
+    const confirmed = await instance.result
+
+    if (!confirmed) return
+
+    try {
+        await fetch.delete(`/module/${module.id}`)
+
+        modulePermissions.value = modulePermissions.value.filter(
+            (item) => item.id !== module.id
+        )
+
+        useToast().add({
+            title: 'Success',
+            description: 'Module deleted successfully',
+            color: 'success'
+        })
+    } catch (error) {
+        useToast().add({
+            title: 'Error',
+            description: 'Failed to delete module',
+            color: 'error'
+        })
+    }
 }
 </script>

@@ -1,5 +1,5 @@
 <template>
-  <div class="mt-4 overflow-hidden rounded-xl border border-default">
+  <div class="mt-4 rounded-xl border border-default">
     <UTable :data="paginatedSubscriptions" :columns="columns" class=" h-screen" />
 
     <div v-if="!subscriptions.length" class="py-12 text-center">

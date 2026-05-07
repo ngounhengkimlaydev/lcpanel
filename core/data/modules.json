@@ -1,0 +1,527 @@
+[
+  {
+    "id": 7,
+    "module_name": "Customer",
+    "module_key": "customer",
+    "permissions": [
+      {
+        "id": 1,
+        "permission_name": "view",
+        "module_id": 7,
+        "created_at": "2026-05-07T15:55:08.791Z",
+        "checked": 0
+      },
+      {
+        "id": 2,
+        "permission_name": "create",
+        "module_id": 7,
+        "created_at": "2026-05-07T15:55:08.791Z",
+        "checked": 0
+      },
+      {
+        "id": 3,
+        "permission_name": "update",
+        "module_id": 7,
+        "created_at": "2026-05-07T15:58:20.754Z",
+        "checked": 0
+      },
+      {
+        "id": 4,
+        "permission_name": "delete",
+        "module_id": 7,
+        "created_at": "2026-05-07T15:58:20.754Z",
+        "checked": 0
+      }
+    ]
+  },
+  {
+    "id": 9,
+    "module_name": "Plan",
+    "module_key": "plan",
+    "permissions": [
+      {
+        "id": 5,
+        "permission_name": "view",
+        "module_id": 9,
+        "created_at": "2026-05-07T16:31:23.840Z",
+        "checked": 0
+      },
+      {
+        "id": 6,
+        "permission_name": "create",
+        "module_id": 9,
+        "created_at": "2026-05-07T16:31:23.840Z",
+        "checked": 0
+      },
+      {
+        "id": 7,
+        "permission_name": "update",
+        "module_id": 9,
+        "created_at": "2026-05-07T16:31:23.840Z",
+        "checked": 0
+      },
+      {
+        "id": 8,
+        "permission_name": "delete",
+        "module_id": 9,
+        "created_at": "2026-05-07T16:31:23.840Z",
+        "checked": 0
+      }
+    ]
+  },
+  {
+    "id": 10,
+    "module_name": "Subcription",
+    "module_key": "subcription",
+    "permissions": [
+      {
+        "id": 9,
+        "permission_name": "view",
+        "module_id": 10,
+        "created_at": "2026-05-07T16:31:37.282Z",
+        "checked": 0
+      },
+      {
+        "id": 10,
+        "permission_name": "create",
+        "module_id": 10,
+        "created_at": "2026-05-07T16:31:37.282Z",
+        "checked": 0
+      },
+      {
+        "id": 11,
+        "permission_name": "update",
+        "module_id": 10,
+        "created_at": "2026-05-07T16:31:37.282Z",
+        "checked": 0
+      },
+      {
+        "id": 12,
+        "permission_name": "delete",
+        "module_id": 10,
+        "created_at": "2026-05-07T16:31:37.282Z",
+        "checked": 0
+      }
+    ]
+  },
+  {
+    "id": 11,
+    "module_name": "invoices",
+    "module_key": "invoice",
+    "permissions": [
+      {
+        "id": 13,
+        "permission_name": "view",
+        "module_id": 11,
+        "created_at": "2026-05-07T16:31:54.717Z",
+        "checked": 0
+      }
+    ]
+  },
+  {
+    "id": 12,
+    "module_name": "Dashboard",
+    "module_key": "dashboard",
+    "permissions": [
+      {
+        "id": 14,
+        "permission_name": "view",
+        "module_id": 12,
+        "created_at": "2026-05-07T16:32:05.122Z",
+        "checked": 0
+      }
+    ]
+  },
+  {
+    "id": 13,
+    "module_name": "SSL",
+    "module_key": "ssl",
+    "permissions": [
+      {
+        "id": 15,
+        "permission_name": "view",
+        "module_id": 13,
+        "created_at": "2026-05-07T16:32:29.839Z",
+        "checked": 0
+      },
+      {
+        "id": 16,
+        "permission_name": "create",
+        "module_id": 13,
+        "created_at": "2026-05-07T16:32:29.839Z",
+        "checked": 0
+      },
+      {
+        "id": 17,
+        "permission_name": "update",
+        "module_id": 13,
+        "created_at": "2026-05-07T16:32:29.839Z",
+        "checked": 0
+      },
+      {
+        "id": 18,
+        "permission_name": "delete",
+        "module_id": 13,
+        "created_at": "2026-05-07T16:32:29.839Z",
+        "checked": 0
+      }
+    ]
+  },
+  {
+    "id": 14,
+    "module_name": "DNS",
+    "module_key": "dns",
+    "permissions": [
+      {
+        "id": 19,
+        "permission_name": "view",
+        "module_id": 14,
+        "created_at": "2026-05-07T16:32:40.224Z",
+        "checked": 0
+      },
+      {
+        "id": 20,
+        "permission_name": "create",
+        "module_id": 14,
+        "created_at": "2026-05-07T16:32:40.224Z",
+        "checked": 0
+      },
+      {
+        "id": 21,
+        "permission_name": "update",
+        "module_id": 14,
+        "created_at": "2026-05-07T16:32:40.224Z",
+        "checked": 0
+      },
+      {
+        "id": 22,
+        "permission_name": "delete",
+        "module_id": 14,
+        "created_at": "2026-05-07T16:32:40.224Z",
+        "checked": 0
+      }
+    ]
+  },
+  {
+    "id": 15,
+    "module_name": "Permission",
+    "module_key": "permission",
+    "permissions": [
+      {
+        "id": 23,
+        "permission_name": "view",
+        "module_id": 15,
+        "created_at": "2026-05-07T16:32:57.869Z",
+        "checked": 0
+      },
+      {
+        "id": 24,
+        "permission_name": "create",
+        "module_id": 15,
+        "created_at": "2026-05-07T16:32:57.869Z",
+        "checked": 0
+      },
+      {
+        "id": 25,
+        "permission_name": "update",
+        "module_id": 15,
+        "created_at": "2026-05-07T16:32:57.869Z",
+        "checked": 0
+      },
+      {
+        "id": 26,
+        "permission_name": "delete",
+        "module_id": 15,
+        "created_at": "2026-05-07T16:32:57.869Z",
+        "checked": 0
+      }
+    ]
+  },
+  {
+    "id": 16,
+    "module_name": "Activity Log",
+    "module_key": "activity_log",
+    "permissions": [
+      {
+        "id": 27,
+        "permission_name": "view",
+        "module_id": 16,
+        "created_at": "2026-05-07T16:33:10.999Z",
+        "checked": 0
+      }
+    ]
+  },
+  {
+    "id": 17,
+    "module_name": "Role",
+    "module_key": "role",
+    "permissions": [
+      {
+        "id": 28,
+        "permission_name": "view",
+        "module_id": 17,
+        "created_at": "2026-05-07T16:33:17.310Z",
+        "checked": 0
+      },
+      {
+        "id": 29,
+        "permission_name": "create",
+        "module_id": 17,
+        "created_at": "2026-05-07T16:33:17.310Z",
+        "checked": 0
+      },
+      {
+        "id": 30,
+        "permission_name": "update",
+        "module_id": 17,
+        "created_at": "2026-05-07T16:33:17.310Z",
+        "checked": 0
+      },
+      {
+        "id": 31,
+        "permission_name": "delete",
+        "module_id": 17,
+        "created_at": "2026-05-07T16:33:17.310Z",
+        "checked": 0
+      }
+    ]
+  },
+  {
+    "id": 18,
+    "module_name": "User",
+    "module_key": "user",
+    "permissions": [
+      {
+        "id": 32,
+        "permission_name": "view",
+        "module_id": 18,
+        "created_at": "2026-05-07T16:33:25.676Z",
+        "checked": 0
+      },
+      {
+        "id": 33,
+        "permission_name": "create",
+        "module_id": 18,
+        "created_at": "2026-05-07T16:33:25.676Z",
+        "checked": 0
+      },
+      {
+        "id": 34,
+        "permission_name": "update",
+        "module_id": 18,
+        "created_at": "2026-05-07T16:33:25.676Z",
+        "checked": 0
+      },
+      {
+        "id": 35,
+        "permission_name": "delete",
+        "module_id": 18,
+        "created_at": "2026-05-07T16:33:25.676Z",
+        "checked": 0
+      }
+    ]
+  },
+  {
+    "id": 19,
+    "module_name": "Service",
+    "module_key": "service",
+    "permissions": [
+      {
+        "id": 36,
+        "permission_name": "view",
+        "module_id": 19,
+        "created_at": "2026-05-07T16:33:41.458Z",
+        "checked": 0
+      }
+    ]
+  },
+  {
+    "id": 20,
+    "module_name": "Port",
+    "module_key": "port",
+    "permissions": [
+      {
+        "id": 37,
+        "permission_name": "view",
+        "module_id": 20,
+        "created_at": "2026-05-07T16:33:48.886Z",
+        "checked": 0
+      }
+    ]
+  },
+  {
+    "id": 21,
+    "module_name": "Process",
+    "module_key": "process",
+    "permissions": [
+      {
+        "id": 38,
+        "permission_name": "view",
+        "module_id": 21,
+        "created_at": "2026-05-07T16:33:59.268Z",
+        "checked": 0
+      }
+    ]
+  },
+  {
+    "id": 22,
+    "module_name": "Cron Jobs",
+    "module_key": "cron_jobs",
+    "permissions": [
+      {
+        "id": 39,
+        "permission_name": "view",
+        "module_id": 22,
+        "created_at": "2026-05-07T16:34:08.966Z",
+        "checked": 0
+      },
+      {
+        "id": 40,
+        "permission_name": "create",
+        "module_id": 22,
+        "created_at": "2026-05-07T16:34:08.966Z",
+        "checked": 0
+      },
+      {
+        "id": 41,
+        "permission_name": "update",
+        "module_id": 22,
+        "created_at": "2026-05-07T16:34:08.966Z",
+        "checked": 0
+      },
+      {
+        "id": 42,
+        "permission_name": "delete",
+        "module_id": 22,
+        "created_at": "2026-05-07T16:34:08.966Z",
+        "checked": 0
+      }
+    ]
+  },
+  {
+    "id": 23,
+    "module_name": "firewall",
+    "module_key": "firewall",
+    "permissions": [
+      {
+        "id": 43,
+        "permission_name": "view",
+        "module_id": 23,
+        "created_at": "2026-05-07T16:34:23.564Z",
+        "checked": 0
+      },
+      {
+        "id": 44,
+        "permission_name": "create",
+        "module_id": 23,
+        "created_at": "2026-05-07T16:34:23.564Z",
+        "checked": 0
+      },
+      {
+        "id": 45,
+        "permission_name": "update",
+        "module_id": 23,
+        "created_at": "2026-05-07T16:34:23.564Z",
+        "checked": 0
+      },
+      {
+        "id": 46,
+        "permission_name": "delete",
+        "module_id": 23,
+        "created_at": "2026-05-07T16:34:23.564Z",
+        "checked": 0
+      }
+    ]
+  },
+  {
+    "id": 24,
+    "module_name": "SSH Key",
+    "module_key": "ssh_key",
+    "permissions": [
+      {
+        "id": 47,
+        "permission_name": "view",
+        "module_id": 24,
+        "created_at": "2026-05-07T16:34:36.397Z",
+        "checked": 0
+      },
+      {
+        "id": 48,
+        "permission_name": "create",
+        "module_id": 24,
+        "created_at": "2026-05-07T16:34:36.397Z",
+        "checked": 0
+      },
+      {
+        "id": 49,
+        "permission_name": "update",
+        "module_id": 24,
+        "created_at": "2026-05-07T16:34:36.397Z",
+        "checked": 0
+      },
+      {
+        "id": 50,
+        "permission_name": "delete",
+        "module_id": 24,
+        "created_at": "2026-05-07T16:34:36.397Z",
+        "checked": 0
+      }
+    ]
+  },
+  {
+    "id": 25,
+    "module_name": "Block IP",
+    "module_key": "block_ip",
+    "permissions": [
+      {
+        "id": 51,
+        "permission_name": "view",
+        "module_id": 25,
+        "created_at": "2026-05-07T16:34:43.720Z",
+        "checked": 0
+      },
+      {
+        "id": 52,
+        "permission_name": "create",
+        "module_id": 25,
+        "created_at": "2026-05-07T16:34:43.720Z",
+        "checked": 0
+      },
+      {
+        "id": 53,
+        "permission_name": "update",
+        "module_id": 25,
+        "created_at": "2026-05-07T16:34:43.720Z",
+        "checked": 0
+      },
+      {
+        "id": 54,
+        "permission_name": "delete",
+        "module_id": 25,
+        "created_at": "2026-05-07T16:34:43.720Z",
+        "checked": 0
+      }
+    ]
+  },
+  {
+    "id": 26,
+    "module_name": "Malware Scan",
+    "module_key": "malware_scan",
+    "permissions": [
+      {
+        "id": 55,
+        "permission_name": "view",
+        "module_id": 26,
+        "created_at": "2026-05-07T16:34:57.508Z",
+        "checked": 0
+      },
+      {
+        "id": 56,
+        "permission_name": "create",
+        "module_id": 26,
+        "created_at": "2026-05-07T16:34:57.508Z",
+        "checked": 0
+      }
+    ]
+  }
+]

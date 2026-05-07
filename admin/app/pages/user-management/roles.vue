@@ -1,22 +1,27 @@
 <template>
     <UDashboardPanel id="roles">
-        <template #header>
-            <UDashboardNavbar title="Roles">
-                <template #right>
-                    <UButton icon="i-lucide-shield-plus" label="Create Role" @click="openCreateModal" />
-                </template>
-            </UDashboardNavbar>
-        </template>
-
-        <template #body>
-            <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <UInput v-model="search" icon="i-lucide-search" placeholder="Search role..."
-                    class="w-full sm:max-w-sm" />
-                <USelect v-model="status" :items="statusItems" class="w-44" />
+        <template #default>
+            <div class="space-y-6">
+                <UCard>
+                    <template #header>
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-semibold">
+                                User Roles
+                            </h3>
+                            <div class="flex space-x-2">
+                                <UButton icon="i-lucide-shield-plus" label="Create Role" @click="openCreateModal" />
+                            </div>
+                        </div>
+                    </template>
+                    <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <UInput v-model="search" icon="i-lucide-search" placeholder="Search role..."
+                            class="w-full sm:max-w-sm" />
+                        <!-- <USelect v-model="status" :items="" class="w-44" /> -->
+                    </div>
+                    <RoleTable :data="filteredRoles" :columns="columns" :total="total" :page="page"
+                        :page-size="pageSize" @update:page="page = $event" />
+                </UCard>
             </div>
-
-            <UTable :data="filteredRoles" :columns="columns" />
-
             <RoleFormModal v-model:open="isModalOpen" :type="modalType" :role="selectedRole" @submit="handleSubmit" />
         </template>
     </UDashboardPanel>
@@ -25,98 +30,128 @@
 <script setup lang="ts">
 import type { TableColumn, DropdownMenuItem } from '@nuxt/ui'
 import RoleFormModal from '~/components/user-management/RoleFormModal.vue'
-
-
-type Role = {
-    id: number
-    name: string
-    description: string
-    users: number
-    status: string
-    permissions: string[]
-    created_at: string
-}
+import RoleTable from '~/components/user-management/RoleTable.vue'
+import type { Role } from '~/types'
 
 const search = ref('')
-const status = ref('all')
-
+const page = ref(1)
+const pageSize = ref(10)
+const total = ref(0)
 const isModalOpen = ref(false)
 const modalType = ref<'create' | 'edit'>('create')
 const selectedRole = ref<Role | null>(null)
 
-const roles = ref<Role[]>([
-    {
-        id: 1,
-        name: 'Super Admin',
-        description: 'Full access to all modules and system settings.',
-        users: 1,
-        status: 'active',
-        permissions: ['dashboard.view', 'users.manage', 'roles.manage', 'billing.manage'],
-        created_at: '2026-05-01'
-    },
-    {
-        id: 2,
-        name: 'Support',
-        description: 'Can view customers, subscriptions, and invoices.',
-        users: 3,
-        status: 'active',
-        permissions: ['customers.view', 'subscriptions.view', 'invoices.view'],
-        created_at: '2026-05-03'
-    }
-])
+const api = useApiFetch()
+const toast = useToast()
 
-const statusItems = [
-    { label: 'All Status', value: 'all' },
-    { label: 'Active', value: 'active' },
-    { label: 'Inactive', value: 'inactive' }
-]
+
+const roles = ref<Role[]>([])
+
+async function getRoles() {
+    const res: any = await api.paginate('/role', {
+        page: page.value,
+        table_size: pageSize.value,
+        filter: {
+            search: search.value,
+        },
+        sort_by: 'id',
+        sort_type: 'desc',
+    })
+
+    roles.value = res.data || res.roles || []
+    total.value = res.total || res.meta?.total || 0
+}
+
+onMounted(getRoles)
+
+async function deleteRole(role: Role) {
+    await api.delete(`/role/${role.id}`)
+
+    toast.add({
+        title: 'Role deleted',
+        color: 'success',
+    })
+
+    await getRoles()
+}
+
+
+
+async function handleSubmit(payload: Role) {
+    if (modalType.value === 'create') {
+        await api.post('/role', payload)
+    } else {
+        await api.put(`/role/${payload.id}`, payload)
+    }
+
+    isModalOpen.value = false
+    await getRoles()
+}
+
 
 const filteredRoles = computed(() => {
     return roles.value.filter((item) => {
         const keyword = search.value.toLowerCase()
 
         const matchSearch =
-            item.name.toLowerCase().includes(keyword) ||
+            item.role_name.toLowerCase().includes(keyword) ||
             item.description.toLowerCase().includes(keyword)
 
-        const matchStatus = status.value === 'all' || item.status === status.value
 
-        return matchSearch && matchStatus
+        return matchSearch
     })
 })
 
 const columns: TableColumn<Role>[] = [
     {
-        accessorKey: 'name',
+        accessorKey: 'role_name',
         header: 'Role',
-        cell: ({ row }) => h('div', {}, [
-            h('p', { class: 'font-medium text-highlighted' }, row.original.name),
-            h('p', { class: 'text-sm text-muted line-clamp-1' }, row.original.description)
-        ])
+        cell: ({ row }) => {
+            const formatText = (value?: string) => {
+                if (!value) return '-'
+
+                return value
+                    .replaceAll('_', ' ')
+                    .replace(/\b\w/g, (char) => char.toUpperCase())
+            }
+
+            return h('div', {}, [
+                h(
+                    'p',
+                    { class: 'font-medium text-highlighted' },
+                    formatText(row.original.role_name)
+                ),
+                h(
+                    'p',
+                    { class: 'text-sm text-muted line-clamp-1' },
+                    formatText(row.original.user_type)
+                )
+            ])
+        }
     },
-    { accessorKey: 'users', header: 'Users' },
     {
-        accessorKey: 'permissions',
-        header: 'Permissions',
-        cell: ({ row }) => h(resolveComponent('UBadge'), {
-            color: 'primary',
-            variant: 'soft'
-        }, {
-            default: () => `${row.original.permissions.length} permissions`
-        })
+        accessorKey: 'user_type',
+        header: 'User Type',
+        cell: ({ row }) =>
+            h(resolveComponent('UBadge'), {
+                color: 'neutral',
+                variant: 'soft',
+                class: 'capitalize'
+            }, {
+                default: () => row.original.user_type || '-'
+            })
     },
     {
-        accessorKey: 'status',
-        header: 'Status',
-        cell: ({ row }) => h(resolveComponent('UBadge'), {
-            color: row.original.status === 'active' ? 'success' : 'neutral',
-            variant: 'soft',
-            class: 'capitalize'
-        }, {
-            default: () => row.original.status
-        })
+        accessorKey: 'created_at',
+        header: 'Created At',
+        cell: ({ row }) => {
+            const date = row.original.created_at
+                ? new Date(row.original.created_at).toLocaleDateString()
+                : '-'
+
+            return h('span', { class: 'text-sm text-muted' }, date)
+        }
     },
-    { accessorKey: 'created_at', header: 'Created At' },
     {
         id: 'actions',
         header: '',
@@ -127,11 +162,6 @@ const columns: TableColumn<Role>[] = [
                         label: 'Edit',
                         icon: 'i-lucide-pencil',
                         onSelect: () => openEditModal(row.original)
-                    },
-                    {
-                        label: row.original.status === 'active' ? 'Disable' : 'Enable',
-                        icon: row.original.status === 'active' ? 'i-lucide-ban' : 'i-lucide-check-circle',
-                        onSelect: () => toggleStatus(row.original)
                     }
                 ],
                 [
@@ -145,11 +175,12 @@ const columns: TableColumn<Role>[] = [
             ]
 
             return h(resolveComponent('UDropdownMenu'), { items }, {
-                default: () => h(resolveComponent('UButton'), {
-                    icon: 'i-lucide-ellipsis',
-                    color: 'neutral',
-                    variant: 'ghost'
-                })
+                default: () =>
+                    h(resolveComponent('UButton'), {
+                        icon: 'i-lucide-ellipsis',
+                        color: 'neutral',
+                        variant: 'ghost'
+                    })
             })
         }
     }
@@ -167,35 +198,13 @@ function openEditModal(role: Role) {
     isModalOpen.value = true
 }
 
-function handleSubmit(payload: Role) {
-    if (modalType.value === 'create') {
-        roles.value.unshift({
-            ...payload,
-            id: Date.now(),
-            users: 0,
-            created_at: new Date().toISOString().slice(0, 10)
-        })
-    } else {
-        const current = roles.value.find((item) => item.id === payload.id)
-        if (!current) return
 
-        current.name = payload.name
-        current.description = payload.description
-        current.status = payload.status
-        current.permissions = payload.permissions
-    }
 
-    isModalOpen.value = false
-}
+// function toggleStatus(role: Role) {
+//     const current = roles.value.find((item) => item.id === role.id)
+//     if (!current) return
 
-function toggleStatus(role: Role) {
-    const current = roles.value.find((item) => item.id === role.id)
-    if (!current) return
+//     current.status = current.status === 'active' ? 'inactive' : 'active'
+// }
 
-    current.status = current.status === 'active' ? 'inactive' : 'active'
-}
-
-function deleteRole(role: Role) {
-    roles.value = roles.value.filter((item) => item.id !== role.id)
-}
 </script>

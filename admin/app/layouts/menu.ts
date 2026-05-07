@@ -3,7 +3,7 @@ import { useI18n } from "vue-i18n";
 import type { NavigationMenuItem } from "@nuxt/ui";
 
 export const useMenu = () => {
-  const open = ref(false)
+  const open = ref(false);
   const userStore = useUserStore();
 
   const isSuperAdmin = computed(() => userStore.isSuperAdmin);
@@ -22,6 +22,7 @@ export const useMenu = () => {
               label: "Customers",
               icon: "i-lucide-users",
               to: "/customers",
+              module_key: "customers",
             },
             {
               label: "Hosting Plans",
@@ -38,37 +39,35 @@ export const useMenu = () => {
               icon: "i-lucide-receipt",
               to: "/invoices",
             },
+            {
+              label: "Websites",
+              icon: "i-lucide-globe",
+              type: "trigger" as const,
+              children: [
+                {
+                  label: "All Websites",
+                  to: "/websites",
+                },
+                {
+                  label: "Create Website",
+                  to: "/websites/create",
+                },
+                {
+                  label: "Domains",
+                  to: "/websites/domains",
+                },
+                {
+                  label: "Subdomains",
+                  to: "/websites/subdomains",
+                },
+                {
+                  label: "Redirects",
+                  to: "/websites/redirects",
+                },
+              ],
+            },
           ]
         : []),
-
-      {
-        label: isSuperAdmin.value ? "Websites" : "My Websites",
-        icon: "i-lucide-globe",
-        type: "trigger",
-        children: [
-          {
-            label: isSuperAdmin.value ? "All Websites" : "My Websites",
-            to: "/websites",
-          },
-          {
-            label: "Create Website",
-            to: "/websites/create",
-          },
-          {
-            label: "Domains",
-            to: "/websites/domains",
-          },
-          {
-            label: "Subdomains",
-            to: "/websites/subdomains",
-          },
-          {
-            label: "Redirects",
-            to: "/websites/redirects",
-          },
-        ],
-      },
-
       {
         label: isSuperAdmin.value ? "Applications" : "My Apps",
         icon: "i-lucide-terminal",
@@ -100,7 +99,7 @@ export const useMenu = () => {
           },
         ],
       },
-
+      // Deployment
       {
         label: "Deployments",
         icon: "i-lucide-rocket",
@@ -124,7 +123,7 @@ export const useMenu = () => {
           },
         ],
       },
-
+      // Database
       {
         label: "Databases",
         icon: "i-lucide-database",
@@ -152,7 +151,7 @@ export const useMenu = () => {
           },
         ],
       },
-
+      // Files & FTP
       {
         label: "Files & FTP",
         icon: "i-lucide-folder",
@@ -172,7 +171,7 @@ export const useMenu = () => {
           },
         ],
       },
-
+      // Email
       {
         label: "Email",
         icon: "i-lucide-mail",
@@ -200,19 +199,20 @@ export const useMenu = () => {
           },
         ],
       },
-
+      // SSL Certificates
       {
         label: "SSL Certificates",
         icon: "i-lucide-lock-keyhole",
         to: "/ssl",
+        module_key: "ssl",
       },
-
+      // DNS
       {
         label: isSuperAdmin.value ? "DNS Manager" : "My DNS",
         icon: "i-lucide-network",
         to: "/dns",
       },
-
+      // Monitoring
       {
         label: "Monitoring",
         icon: "i-lucide-activity",
@@ -241,7 +241,7 @@ export const useMenu = () => {
             : []),
         ],
       },
-
+      // Backups
       {
         label: "Backups",
         icon: "i-lucide-archive",
@@ -367,7 +367,6 @@ export const useMenu = () => {
             },
           ]
         : []),
-
       {
         label: "Settings",
         icon: "i-lucide-settings",

@@ -9,9 +9,6 @@ export class ModuleMapper {
             id: module.id,
             moduleName: module.module_name,
             moduleKey: module.module_key,
-            featured: module.featured,
-            sequence: module.sequence ?? undefined,
-            menuTitle: module.menu_title ?? undefined,
             createdAt: module.created_at,
             updatedAt: module.updated_at,
             permissions: module.permissions

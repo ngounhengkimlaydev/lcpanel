@@ -41,6 +41,7 @@ export class ModuleController {
       sortType: (sortType as 'asc' | 'desc') || 'desc',
     });
   }
+  
   @Get('sync_module')
   @Permission(ModuleController.MODULE_KEY, PermissionAction.VIEW)
   async sync() {

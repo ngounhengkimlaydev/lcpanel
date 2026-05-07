@@ -21,7 +21,7 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Post('fetch_data')
+  @Post('me')
   fetchData(@GetUser('id') userId: number) {
     return this.authService.getResponseData(userId);
   }

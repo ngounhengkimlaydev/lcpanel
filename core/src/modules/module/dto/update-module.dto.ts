@@ -12,18 +12,6 @@ export class UpdateModuleDto {
     @IsString()
     module_key!: string;
 
-    @IsNumber()
-    @IsOptional()
-    sequence?: number;
-
-    @IsBoolean()
-    @IsOptional()
-    featured?: boolean;
-
-    @IsString()
-    @IsOptional()
-    menu_title?: string;
-
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => UpdatePermissionDto)

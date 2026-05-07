@@ -1,24 +1,26 @@
 <template>
     <UDashboardPanel id="admin-users">
-        <template #header>
-            <UDashboardNavbar title="Admin Users">
-                <template #right>
-                    <UButton icon="i-lucide-user-plus" label="Create User" @click="openCreateModal" />
-                </template>
-            </UDashboardNavbar>
-        </template>
-
-        <template #body>
+        <template #default>
             <div class="space-y-6">
-                <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <UInput v-model="search" icon="i-lucide-search" placeholder="Search user..."
-                        class="w-full sm:max-w-sm" />
-
-                    <USelect v-model="status" :items="statusItems" class="w-44" />
-                </div>
-
-                <UTable :data="filteredUsers" :columns="columns" />
-
+                <UCard>
+                    <template #header>
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-semibold">
+                                Admin Users
+                            </h3>
+                            <div class="flex space-x-2">
+                                <!-- <UButton icon="i-lucide-dices" label="View Customer Dashboard" @click="dashboard = true" /> -->
+                                <UButton icon="i-lucide-user-plus" label="Create User" @click="openCreateModal" />
+                            </div>
+                        </div>
+                    </template>
+                    <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <UInput v-model="search" icon="i-lucide-search" placeholder="Search user..."
+                            class="w-full sm:max-w-sm" />
+                        <USelect v-model="status" :items="statusItems" class="w-44" />
+                    </div>
+                    <Table :data="filteredUsers" :columns="columns" />
+                </UCard>
                 <UserFormModal v-model:open="isModalOpen" :type="modalType" :user="selectedUser"
                     @submit="handleSubmit" />
             </div>
@@ -28,17 +30,11 @@
 
 <script setup lang="ts">
 import type { TableColumn, DropdownMenuItem } from '@nuxt/ui'
+import Table from '~/components/user-management/AdminTable.vue'
 import UserFormModal from '~/components/user-management/UserFormModal.vue'
+import type { AdminUser } from '~/types/admin'
 
-type AdminUser = {
-    id: number
-    name: string
-    email: string
-    role: string
-    status: string
-    last_login: string
-    created_at: string
-}
+
 
 const search = ref('')
 const status = ref('all')

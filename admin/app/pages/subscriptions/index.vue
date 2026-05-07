@@ -1,29 +1,33 @@
 <template>
     <UDashboardPanel id="subscriptions">
         <template #default>
-            <UCard>
-                <template #header>
-                    <div class="flex items-center justify-between">
-                        <h3 class="text-lg font-semibold">
-                            Subscription
-                        </h3>
-                        <div class="flex space-x-2">
-                            <UButton icon="i-lucide-dices" label="View Subscription Dashboard"
-                                @click="dashboard = true" />
-                            <UButton icon="i-lucide-folder-kanban" label="Create Subscription" @click="openCreateModal" />
+            <div class="space-y-6">
+                <UCard>
+                    <template #header>
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-semibold">
+                                Subscription
+                            </h3>
+                            <div class="flex space-x-2">
+                                <UButton icon="i-lucide-dices" label="View Subscription Dashboard"
+                                    @click="dashboard = true" />
+                                <UButton icon="i-lucide-folder-kanban" label="Create Subscription"
+                                    @click="openCreateModal" />
+                            </div>
                         </div>
+                    </template>
+                    <div class="space-y-6">
+                        <SubscriptionToolbar v-model:search="search" v-model:status="status" />
+                        <SubscriptionTable :subscriptions="filteredSubscriptions" @view="openViewModal"
+                            @renew="renewSubscription" @change-plan="openChangePlanModal"
+                            @cancel="cancelSubscription" />
+                        <SubscriptionFormModal v-model:open="isFormOpen" @submit="createSubscription" />
+                        <SubscriptionViewModal v-model:open="isViewOpen" :subscription="selectedSubscription" />
+                        <SubscriptionChangePlanModal v-model:open="isChangePlanOpen"
+                            :subscription="selectedSubscription" @submit="changePlan" />
                     </div>
-                </template>
-                <div class="space-y-6">
-                    <SubscriptionToolbar v-model:search="search" v-model:status="status" />
-                    <SubscriptionTable :subscriptions="filteredSubscriptions" @view="openViewModal"
-                        @renew="renewSubscription" @change-plan="openChangePlanModal" @cancel="cancelSubscription" />
-                    <SubscriptionFormModal v-model:open="isFormOpen" @submit="createSubscription" />
-                    <SubscriptionViewModal v-model:open="isViewOpen" :subscription="selectedSubscription" />
-                    <SubscriptionChangePlanModal v-model:open="isChangePlanOpen" :subscription="selectedSubscription"
-                        @submit="changePlan" />
-                </div>
-            </UCard>
+                </UCard>
+            </div>
             <USlideover v-model:open="dashboard" title="Subscription">
                 <template #body>
                     <SubscriptionStats />

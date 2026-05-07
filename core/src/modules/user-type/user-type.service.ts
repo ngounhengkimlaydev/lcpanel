@@ -4,70 +4,61 @@ import { UserTypeConst } from "./user-type.enum";
 
 @Injectable()
 export class UserTypeService {
-    constructor(private readonly prisma: PrismaService){}
+  constructor(private readonly prisma: PrismaService) {}
 
-    getIdgLevel(): number {
-        return UserTypeConst.IDG_LEVEL;
-    }
+  getSuperAdmin(): number {
+    return UserTypeConst.SUPER_ADMIN;
+  }
 
-    getCompanyLevel(): number {
-        return UserTypeConst.COMPANY_LEVEL;
-    }
+  getAdminLevel(): number {
+    return UserTypeConst.ADMIN;
+  }
 
-    getBranchLevel(): number {
-        return UserTypeConst.BRANCH_LEVEL;
-    }
+  getResellerLevel(): number {
+    return UserTypeConst.RESELLER;
+  }
 
-    isSuper(userTypeId: number): boolean {
-        return userTypeId === UserTypeConst.IDG_ID;
-    }
+  getStaffLevel(): number {
+    return UserTypeConst.STAFF;
+  }
 
-    getCompanyId(): number {
-        return UserTypeConst.COMPANY_ID;
-    }
+  getSupportLevel(): number {
+    return UserTypeConst.SUPPORT;
+  }
 
-    getBranchId(): number {
-        return UserTypeConst.BRANCH_ID;
-    }
+  getClientLevel(): number {
+    return UserTypeConst.CLIENT;
+  }
 
-    authType(userTypeId: number, type: number): boolean {
-        return userTypeId === type;
-    }
+  isSuper(userTypeId: number): boolean {
+    return userTypeId === UserTypeConst.SUPER_ADMIN;
+  }
 
-    //GET AUTH LEVEL
-    async userAuthLevel(userTypeId: number): Promise<number | null> {
-        const auth = await this.prisma.userType.findUnique({
-            where: { id: userTypeId },
-            select: { level: true },
-        });
+  authType(userTypeId: number, type: number): boolean {
+    return userTypeId === type;
+  }
 
-        return auth?.level ?? null;
-    }
+  async userAuthLevel(userTypeId: number): Promise<number | null> {
+    const auth = await this.prisma.userType.findUnique({
+      where: { id: userTypeId },
+      select: { level: true },
+    });
 
-    async lists(userTypeId: number) {
-        const authLevel = await this.userAuthLevel(userTypeId);
+    return auth?.level ?? null;
+  }
 
-        if(!authLevel) return [];
+  async lists(userTypeId: number) {
+    const authLevel = await this.userAuthLevel(userTypeId);
 
-        if (
-            authLevel === this.getIdgLevel() ||
-            authLevel === this.getCompanyLevel()
-        ) {
-            return this.prisma.userType.findMany({
-                where: {
-                    level: { lt: authLevel },
-                }
-            });
-        }
+    if (!authLevel) return [];
 
-        if (authLevel === this.getBranchLevel()) {
-            return this.prisma.userType.findMany({
-                where: {
-                    level: { lte: authLevel },
-                }
-            });
-        }
-
-        return [];
-    }
+    return this.prisma.userType.findMany({
+      where: {
+        level: { lt: authLevel },
+      },
+      orderBy: {
+        level: "desc",
+      },
+    });
+  }
 }

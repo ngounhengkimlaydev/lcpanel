@@ -88,6 +88,14 @@ export type UserData = {
     role_name: string | undefined;
   };
 };
+
+export type UserType = {
+  id: number;
+  type: string;
+  level: number;
+  created_at?: string;
+};
+
 export type Customer = {
   id: number;
   name: string;
@@ -146,21 +154,24 @@ export type Invoice = {
 
 export type Role = {
   id: number;
-  name: string;
+  role_name: string;
   description: string;
-  users: number;
-  status: string;
+  user_type: string;
+  user_type_id: number;
   permissions: string[];
   created_at: string;
+};
+
+export type PermissionItem = {
+  index: number;
+  permission_name: string;
 };
 
 export type ModulePermission = {
   id: number;
   module_name: string;
   module_key: string;
-  description: string;
-  status: string;
-  permissions: string[];
+  permissions: PermissionItem[];
   created_at: string;
 };
 
@@ -214,28 +225,28 @@ export interface SystemService {
   auto_start: boolean;
 }
 
-export type PortStatus = 'open' | 'closed' | 'filtered'
+export type PortStatus = "open" | "closed" | "filtered";
 
 export interface Port {
-  id: number
-  port: number
-  protocol: 'TCP' | 'UDP'
-  service: string
-  description: string
-  status: PortStatus
-  created_at: string
+  id: number;
+  port: number;
+  protocol: "TCP" | "UDP";
+  service: string;
+  description: string;
+  status: PortStatus;
+  created_at: string;
 }
-export type ProcessStatus = 'running' | 'stopped' | 'sleeping' | 'error'
+export type ProcessStatus = "running" | "stopped" | "sleeping" | "error";
 
 export interface ServerProcess {
-  id: number
-  pid: number
-  name: string
-  user: string
-  cpu: number
-  memory: number
-  status: ProcessStatus
-  uptime: string
-  command: string
-  created_at: string
+  id: number;
+  pid: number;
+  name: string;
+  user: string;
+  cpu: number;
+  memory: number;
+  status: ProcessStatus;
+  uptime: string;
+  command: string;
+  created_at: string;
 }

@@ -1,8 +1,8 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { Prisma } from '@prisma/client';
-import { CreateModuleDto } from './dto/create-module.dto';
-import { UpdateModuleDto } from './dto/update-module.dto';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { Prisma } from "@prisma/client";
+import { CreateModuleDto } from "./dto/create-module.dto";
+import { UpdateModuleDto } from "./dto/update-module.dto";
 @Injectable()
 export class ModuleRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -24,13 +24,11 @@ export class ModuleRepository {
       update: {
         module_key: module.module_key,
         module_name: module.module_name,
-        featured: module.featured,
       },
       create: {
         id: module.id,
         module_key: module.module_key,
         module_name: module.module_name,
-        featured: module.featured,
       },
     });
 
@@ -112,7 +110,6 @@ export class ModuleRepository {
       where: { id },
       select: {
         id: true,
-        featured: true,
         module_name: true,
         module_key: true,
         permissions: true,
@@ -144,7 +141,6 @@ export class ModuleRepository {
     const data = await this.prisma.module.findMany({
       select: {
         id: true,
-        featured: true,
         module_name: true,
         module_key: true,
         permissions: true,
@@ -169,14 +165,14 @@ export class ModuleRepository {
     tableSize: number;
     filter?: { search?: string };
     sortBy?: string;
-    sortType?: 'asc' | 'desc';
+    sortType?: "asc" | "desc";
   }) {
     const {
       page,
       tableSize,
       filter = {},
-      sortBy = 'id',
-      sortType = 'desc',
+      sortBy = "id",
+      sortType = "desc",
     } = params;
 
     const skip = (page - 1) * tableSize;

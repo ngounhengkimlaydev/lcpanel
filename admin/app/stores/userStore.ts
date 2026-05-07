@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import type { UserData } from "~/types";
+import type { PermissionItem, UserData, UserType } from "~/types";
 
 export const useUserStore = defineStore("user", () => {
   const api = useApiFetch();
@@ -16,7 +16,8 @@ export const useUserStore = defineStore("user", () => {
     secure: false,
     default: () => null,
   });
-
+  
+  const userTypes = ref<UserType[]>([]);
   const permissions = ref<string[]>([]);
   const roles = ref<string[]>([]);
 
@@ -43,6 +44,7 @@ export const useUserStore = defineStore("user", () => {
     user?: UserData | null;
     roles?: string[];
     permissions?: string[];
+    userTypes?: UserType[];
   }) => {
     if ("token" in payload) {
       token.value = payload.token || null;
@@ -59,6 +61,7 @@ export const useUserStore = defineStore("user", () => {
       [];
 
     permissions.value = payload.permissions || payload.user?.permissions || [];
+    userTypes.value = payload.userTypes || [];
   };
 
   const initStore = async () => {
@@ -68,6 +71,7 @@ export const useUserStore = defineStore("user", () => {
         user: null,
         roles: [],
         permissions: [],
+        userTypes: [],
       });
       return null;
     }
@@ -78,17 +82,19 @@ export const useUserStore = defineStore("user", () => {
         user: user.value,
         roles: user.value.roles || [],
         permissions: user.value.permissions || [],
+        userTypes: userTypes.value || [],
       });
     }
 
     try {
-      const res: any = await api.post("/auth/fetch_data");
+      const res: any = await api.post("/auth/me");
 
       setData({
         token: token.value,
         user: res.user || res,
         roles: res.roles || res.user?.roles || [],
         permissions: res.permissions || res.user?.permissions || [],
+        userTypes: res.user_type_all || [],
       });
 
       return res;
@@ -98,6 +104,7 @@ export const useUserStore = defineStore("user", () => {
         user: null,
         roles: [],
         permissions: [],
+        userTypes: [],
       });
 
       return null;
@@ -112,6 +119,7 @@ export const useUserStore = defineStore("user", () => {
       user: res.user || null,
       roles: res.roles || res.user?.roles || [],
       permissions: res.permissions || res.user?.permissions || [],
+      userTypes: res.user_type_all || [],
     });
 
     return res;
@@ -123,6 +131,7 @@ export const useUserStore = defineStore("user", () => {
       user: null,
       roles: [],
       permissions: [],
+      userTypes: [],
     });
 
     return navigateTo("/login");
@@ -145,6 +154,7 @@ export const useUserStore = defineStore("user", () => {
     permissions,
     isSuperAdmin,
     isAuthenticated,
+    userTypes,
     setData,
     initStore,
     login,

@@ -10,9 +10,6 @@ model Module {
   id          Int          @id @default(autoincrement())
   module_name String
   module_key  String       
-  featured    Boolean      @default(false)
-  sequence    Int?
-  menu_title  String?
   created_at  DateTime     @default(now())
   updated_at  DateTime     @updatedAt
   permissions Permission[]
