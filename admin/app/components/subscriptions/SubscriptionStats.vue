@@ -1,5 +1,5 @@
 <template>
-  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+  <div class="grid grid-cols-1 gap-4">
     <UCard v-for="item in stats" :key="item.label" class="relative overflow-hidden">
       <div class="absolute -right-8 -top-8 size-28 rounded-full bg-primary/10" />
 

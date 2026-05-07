@@ -1,31 +1,34 @@
 <template>
     <UDashboardPanel id="subscriptions">
-        <template #header>
-            <UDashboardNavbar title="Subscriptions">
-                <template #right>
-                    <UButton icon="i-lucide-plus" label="Create Subscription" @click="openCreateModal" />
+        <template #default>
+            <UCard>
+                <template #header>
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-semibold">
+                            Subscription
+                        </h3>
+                        <div class="flex space-x-2">
+                            <UButton icon="i-lucide-dices" label="View Subscription Dashboard"
+                                @click="dashboard = true" />
+                            <UButton icon="i-lucide-folder-kanban" label="Create Subscription" @click="openCreateModal" />
+                        </div>
+                    </div>
                 </template>
-            </UDashboardNavbar>
-        </template>
-
-        <template #body>
-            <div class="space-y-6">
-                <SubscriptionStats />
-
-                <UCard>
+                <div class="space-y-6">
                     <SubscriptionToolbar v-model:search="search" v-model:status="status" />
-
                     <SubscriptionTable :subscriptions="filteredSubscriptions" @view="openViewModal"
                         @renew="renewSubscription" @change-plan="openChangePlanModal" @cancel="cancelSubscription" />
-                </UCard>
-
-                <SubscriptionFormModal v-model:open="isFormOpen" @submit="createSubscription" />
-
-                <SubscriptionViewModal v-model:open="isViewOpen" :subscription="selectedSubscription" />
-
-                <SubscriptionChangePlanModal v-model:open="isChangePlanOpen" :subscription="selectedSubscription"
-                    @submit="changePlan" />
-            </div>
+                    <SubscriptionFormModal v-model:open="isFormOpen" @submit="createSubscription" />
+                    <SubscriptionViewModal v-model:open="isViewOpen" :subscription="selectedSubscription" />
+                    <SubscriptionChangePlanModal v-model:open="isChangePlanOpen" :subscription="selectedSubscription"
+                        @submit="changePlan" />
+                </div>
+            </UCard>
+            <USlideover v-model:open="dashboard" title="Subscription">
+                <template #body>
+                    <SubscriptionStats />
+                </template>
+            </USlideover>
         </template>
     </UDashboardPanel>
 </template>
@@ -42,7 +45,7 @@ import SubscriptionChangePlanModal from '~/components/subscriptions/Subscription
 
 const search = ref('')
 const status = ref('all')
-
+const dashboard = ref<boolean>(false)
 const isFormOpen = ref(false)
 const isViewOpen = ref(false)
 const isChangePlanOpen = ref(false)

@@ -1,6 +1,6 @@
 <template>
   <div class="mt-4 overflow-hidden rounded-xl border border-default">
-    <UTable :data="paginatedSubscriptions" :columns="columns" />
+    <UTable :data="paginatedSubscriptions" :columns="columns" class=" h-screen" />
 
     <div v-if="!subscriptions.length" class="py-12 text-center">
       <UIcon name="i-lucide-credit-card" class="mx-auto mb-3 size-10 text-muted" />

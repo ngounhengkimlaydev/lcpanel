@@ -4,22 +4,24 @@
             <div class="space-y-6">
                 <UCard>
                     <template #header>
-                        <UDashboardNavbar title="Invoices">
-                            <template #right>
-                                <UButton icon="i-lucide-plus" label="Create Invoice" @click="isCreateOpen = true" />
-                            </template>
-                        </UDashboardNavbar>
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-semibold">
+                                Invoice
+                            </h3>
+                            <div class="flex space-x-2">
+                                <UButton icon="i-lucide-dices" label="View Invoice Dashboard"
+                                    @click="dashboard = true" />
+                                <UButton icon="i-lucide-receipt-text" label="Create Invoice" @click="isCreateOpen = true" />
+                            </div>
+                        </div>
                     </template>
-                    <div class="flex space-x-2">
-                        <UButton icon="i-lucide-dices" label="View Invoice Dashboard" @click="dashboard = true" />
-                    </div>
                     <InvoiceToolbar v-model:search="search" v-model:status="status" />
                     <InvoiceTable :data="filteredInvoices" @view="viewInvoice" @paid="markAsPaid" @send="sendInvoice"
                         @download="downloadInvoice" @delete="deleteInvoice" />
 
                     <InvoiceCreateModal v-model:open="isCreateOpen" @submit="createInvoice" />
                     <InvoiceViewModal v-model:open="isViewOpen" :invoice="selectedInvoice" />
-                    <USlideover v-model:open="dashboard" title="Customer">
+                    <USlideover v-model:open="dashboard" title="Invoice">
                         <template #body>
                             <InvoiceStats />
                         </template>

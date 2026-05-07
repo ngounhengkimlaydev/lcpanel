@@ -1,6 +1,6 @@
 <template>
-    <div class="space-y-4">
-        <UTable :data="paginatedData" :columns="columns" />
+    <UCard class="space-y-4 mt-5">
+        <UTable :data="paginatedData" :columns="columns" class=" h-screen" />
 
         <div v-if="paginatedData.length" class="flex items-center justify-between border-t border-default pt-4">
             <p class="text-sm text-muted">
@@ -9,7 +9,7 @@
 
             <UPagination v-model:page="page" :total="data.length" :items-per-page="pageSize" />
         </div>
-    </div>
+    </UCard>
 </template>
 
 <script setup lang="ts">
