@@ -45,69 +45,16 @@ export class ServicesService {
   ) {
     this.validateService(serviceName);
 
-    await execFileAsync("sudo", ["systemctl", action, serviceName]);
+    await execFileAsync("/usr/bin/sudo", [
+      "/usr/bin/systemctl",
+      action,
+      serviceName,
+    ]);
 
     return {
       success: true,
       message: `${serviceName} ${action} successfully`,
     };
-  }
-
-  private async getServiceStatus(serviceName: string) {
-    try {
-      const [activeResult, enabledResult] = await Promise.allSettled([
-        execFileAsync("systemctl", ["is-active", serviceName]),
-        execFileAsync("systemctl", ["is-enabled", serviceName]),
-      ]);
-
-      const status =
-        activeResult.status === "fulfilled"
-          ? activeResult.value.stdout.trim()
-          : "inactive";
-
-      const autoStart =
-        enabledResult.status === "fulfilled"
-          ? enabledResult.value.stdout.trim() === "enabled"
-          : false;
-
-      return {
-        name: serviceName,
-        description: this.getDescription(serviceName),
-        status: this.mapStatus(status),
-        raw_status: status,
-        auto_start: autoStart,
-      };
-    } catch {
-      return {
-        name: serviceName,
-        description: this.getDescription(serviceName),
-        status: "unknown",
-        raw_status: "unknown",
-        auto_start: false,
-      };
-    }
-  }
-
-  private mapStatus(status: string) {
-    if (status === "active") return "running";
-    if (status === "inactive") return "stopped";
-    if (status === "failed") return "failed";
-
-    return "unknown";
-  }
-
-  private getDescription(serviceName: string) {
-    const map: Record<string, string> = {
-      nginx: "Web server and reverse proxy",
-      mysql: "MySQL database server",
-      mariadb: "MariaDB database server",
-      redis: "Redis cache server",
-      ssh: "SSH remote access service",
-      sshd: "SSH daemon service",
-      "pm2-lay": "PM2 process manager",
-    };
-
-    return map[serviceName] || "System service";
   }
 
   private async getAllSystemServices() {
