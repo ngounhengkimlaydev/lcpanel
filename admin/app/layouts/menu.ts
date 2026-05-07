@@ -321,10 +321,6 @@ export const useMenu = () => {
                   label: "Logs",
                   to: "/system/logs",
                 },
-                {
-                  label: "Updates",
-                  to: "/system/updates",
-                },
               ],
             },
             {

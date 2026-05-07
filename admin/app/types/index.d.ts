@@ -213,3 +213,29 @@ export interface SystemService {
   memory: string;
   auto_start: boolean;
 }
+
+export type PortStatus = 'open' | 'closed' | 'filtered'
+
+export interface Port {
+  id: number
+  port: number
+  protocol: 'TCP' | 'UDP'
+  service: string
+  description: string
+  status: PortStatus
+  created_at: string
+}
+export type ProcessStatus = 'running' | 'stopped' | 'sleeping' | 'error'
+
+export interface ServerProcess {
+  id: number
+  pid: number
+  name: string
+  user: string
+  cpu: number
+  memory: number
+  status: ProcessStatus
+  uptime: string
+  command: string
+  created_at: string
+}

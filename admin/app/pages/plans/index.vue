@@ -2,7 +2,6 @@
   <UDashboardPanel id="plans">
     <template #default>
       <div class="space-y-6">
-
         <UCard>
           <template #header>
             <div class="flex items-center justify-between">
