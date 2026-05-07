@@ -94,7 +94,7 @@ export const useUserStore = defineStore("user", () => {
         user: res.user || res,
         roles: res.roles || res.user?.roles || [],
         permissions: res.permissions || res.user?.permissions || [],
-        userTypes: res.user_type_all || [],
+        userTypes: res.user_type || [],
       });
 
       return res;
@@ -119,7 +119,7 @@ export const useUserStore = defineStore("user", () => {
       user: res.user || null,
       roles: res.roles || res.user?.roles || [],
       permissions: res.permissions || res.user?.permissions || [],
-      userTypes: res.user_type_all || [],
+      userTypes: res.user_type || [],
     });
 
     return res;

@@ -15,8 +15,8 @@ export interface UserDTO {
     // IDs: make roleId, companyId, branchId type-safe
     roleId: number;
     userTypeId: number;
-    companyId: number | null;
-    branchId: number | null;
+    // companyId: number | null;
+    // branchId: number | null;
     // Relations: nullable
     role?: RoleDTO;
     userType?: UserTypeDto;

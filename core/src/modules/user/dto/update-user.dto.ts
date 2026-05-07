@@ -24,13 +24,13 @@ export class UpdateUserDTO {
     @IsNumber()
     userTypeId!: number;
 
-    @IsOptional()
-    @IsNumber()
-    company_id?: number | null;
+    // @IsOptional()
+    // @IsNumber()
+    // company_id?: number | null;
 
-    @IsOptional()
-    @IsNumber()
-    branchId?: number | null;
+    // @IsOptional()
+    // @IsNumber()
+    // branchId?: number | null;
 
     @IsNumber()
     status?: number | 1;
