@@ -188,3 +188,16 @@ export type ServerStats = {
   diskTotal: number;
   timestamp: string;
 };
+export type Plan = {
+  id: number;
+  name: string;
+  price: number;
+  status: string;
+  customers: number;
+  disk: string;
+  bandwidth: string;
+  domains: number;
+  databases: number;
+  emails: number;
+  ssl: boolean;
+};

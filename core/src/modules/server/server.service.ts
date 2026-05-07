@@ -12,7 +12,12 @@ export class ServerService {
     const cpu = await si.currentLoad();
     const cpuInfo = await si.cpu();
     const mem = await si.mem();
-    const disk = await si.fsSize();
+    const disks = await si.fsSize();
+
+    const mainDisk =
+      disks.find((d) => d.mount === "/") ||
+      disks.find((d) => d.fs.startsWith("/dev")) ||
+      disks[0];
 
     return {
       cpu: cpu.currentLoad.toFixed(2),
@@ -22,9 +27,9 @@ export class ServerService {
       ramUsed: (mem.used / 1024 / 1024 / 1024).toFixed(2),
       ramTotal: (mem.total / 1024 / 1024 / 1024).toFixed(2),
 
-      disk: disk[0].use,
-      diskUsed: disk[0].used,
-      diskTotal: disk[0].size,
+      disk: mainDisk.use.toFixed(2),
+      diskUsed: (mainDisk.used / 1024 / 1024 / 1024).toFixed(2),
+      diskTotal: (mainDisk.size / 1024 / 1024 / 1024).toFixed(2),
     };
   }
 

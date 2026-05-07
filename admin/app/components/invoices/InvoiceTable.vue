@@ -2,7 +2,7 @@
     <div class="space-y-4">
         <UTable :data="paginatedData" :columns="columns" />
 
-        <div class="flex items-center justify-between border-t border-default pt-4">
+        <div v-if="paginatedData.length" class="flex items-center justify-between border-t border-default pt-4">
             <p class="text-sm text-muted">
                 Showing {{ start + 1 }}-{{ end }} of {{ data.length }}
             </p>

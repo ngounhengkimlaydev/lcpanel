@@ -1,38 +1,32 @@
 <template>
   <UDashboardPanel id="customers">
-    <template #header>
-      <UDashboardNavbar title="Customers">
-        <template #right>
-          <UButton
-            icon="i-lucide-user-plus"
-            label="Add Customer"
-            @click="openCreateModal"
-          />
-        </template>
-      </UDashboardNavbar>
-    </template>
-
-    <template #body>
+    <template #default>
       <div class="space-y-6">
-        <CustomerStats />
-
         <UCard>
+          <template #header>
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-semibold">
+                Customers
+              </h3>
+              <div class="flex space-x-2">
+                <UButton icon="i-lucide-dices" label="View Customer Dashboard" @click="dashboard = true" />
+                <UButton icon="i-lucide-user-plus" label="Add Customer" @click="openCreateModal" />
+              </div>
+            </div>
+          </template>
           <CustomerToolbar v-model:search="search" v-model:status="status" />
-
-          <CustomerTable
-            :customers="filteredCustomers"
-            @edit="openEditModal"
-          />
+          <CustomerTable :customers="filteredCustomers" @edit="openEditModal" />
         </UCard>
-
-        <CustomerFormModal
-          v-model:open="isModalOpen"
-          :type="modalType"
-          :customer="selectedCustomer"
-          @submit="handleSubmit"
-        />
+        <CustomerFormModal v-model:open="isModalOpen" :type="modalType" :customer="selectedCustomer"
+          @submit="handleSubmit" />
       </div>
+      <USlideover v-model:open="dashboard" title="Customer">
+        <template #body>
+          <CustomerStats />
+        </template>
+      </USlideover>
     </template>
+
   </UDashboardPanel>
 </template>
 
@@ -50,7 +44,7 @@ definePageMeta({
 
 const search = ref('')
 const status = ref('all')
-
+const dashboard = ref<boolean>(false)
 const isModalOpen = ref(false)
 const modalType = ref<'create' | 'edit'>('create')
 const selectedCustomer = ref<Customer | null>(null)

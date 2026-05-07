@@ -41,8 +41,8 @@
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm text-muted">Disk Usage</p>
-            <h3 class="mt-2 text-3xl font-bold">{{ (stats?.diskUsed / 1024 / 1024 / 1024).toFixed(2) }}GB</h3>
-            <p>of {{ (stats?.diskTotal / 1024 / 1024 / 1024).toFixed(2) }}GB</p>
+            <h3 class="mt-2 text-3xl font-bold">{{ stats?.diskUsed }}GB</h3>
+            <p>of {{ stats?.diskTotal }}GB</p>
             <p class="mt-2 text-sm" :class="`text-${statusColor(Number(stats?.disk ?? 0))}`">
               {{ healthText(Number(stats?.disk ?? 0)) }}
             </p>

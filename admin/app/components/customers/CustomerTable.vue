@@ -1,21 +1,19 @@
 <template>
-  <div class="space-y-4">
-    <UTable :data="paginatedCustomers" :columns="columns" />
-
-    <div v-if="!customers.length" class="py-12 text-center">
-      <UIcon name="i-lucide-users" class="mx-auto mb-3 size-10 text-muted" />
-      <p class="font-medium text-highlighted">No customers found</p>
-      <p class="text-sm text-muted">Try changing your filter or search.</p>
-    </div>
-
-    <div v-else class="flex items-center justify-between border-t border-default px-4 py-3">
+  <UCard class="space-y-4 mt-5">
+    <UTable :data="paginatedCustomers" :columns="columns" class="h-screen">
+      <template #empty v-if="!customers.length" class="py-12 text-center">
+        <UIcon name="i-lucide-users" class="mx-auto mb-3 size-10 text-muted" />
+        <p class="font-medium text-highlighted">No customers found</p>
+        <p class="text-sm text-muted">Try changing your filter or search.</p>
+      </template>
+    </UTable>
+    <div v-if="customers.length" class="flex items-center justify-between border-t border-default px-4 py-3">
       <p class="text-sm text-muted">
         Showing {{ start + 1 }}-{{ end }} of {{ customers.length }}
       </p>
-
       <UPagination v-model:page="page" :total="customers.length" :items-per-page="pageSize" />
     </div>
-  </div>
+  </UCard>
 </template>
 
 <script setup lang="ts">

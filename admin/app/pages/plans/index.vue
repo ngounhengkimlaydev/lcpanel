@@ -1,37 +1,30 @@
 <template>
   <UDashboardPanel id="plans">
-    <template #header>
-      <UDashboardNavbar title="Hosting Plans">
-        <template #right>
-          <UButton
-            icon="i-lucide-package-plus"
-            label="Create Plan"
-            @click="openCreateModal"
-          />
-        </template>
-      </UDashboardNavbar>
-    </template>
-
-    <template #body>
+    <template #default>
       <div class="space-y-6">
-        <PlanStats />
 
         <UCard>
+          <template #header>
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-semibold">
+                Hosting Plans
+              </h3>
+              <div class="flex space-x-2">
+                <UButton icon="i-lucide-dices" label="View Plan Dashboard" @click="dashboard = true" />
+                <UButton icon="i-lucide-package-plus" label="Create Plan" @click="openCreateModal" />
+              </div>
+            </div>
+          </template>
           <PlanToolbar v-model:search="search" v-model:status="status" />
-
-          <PlanGrid
-            :plans="filteredPlans"
-            @edit="openEditModal"
-          />
+          <PlanGrid :plans="filteredPlans" @edit="openEditModal" />
         </UCard>
-
-        <PlanFormModal
-          v-model:open="isModalOpen"
-          :type="modalType"
-          :plan="selectedPlan"
-          @submit="handleSubmit"
-        />
+        <PlanFormModal v-model:open="isModalOpen" :type="modalType" :plan="selectedPlan" @submit="handleSubmit" />
       </div>
+      <USlideover v-model:open="dashboard" title="Plan">
+        <template #body>
+          <PlanStats />
+        </template>
+      </USlideover>
     </template>
   </UDashboardPanel>
 </template>
@@ -41,24 +34,12 @@ import PlanGrid from '~/components/plans/PlanGrid.vue'
 import PlanStats from '~/components/plans/PlanStats.vue'
 import PlanToolbar from '~/components/plans/PlanToolbar.vue'
 import PlanFormModal from '~/components/plans/PlanFormModal.vue'
+import type { Plan } from '~/types'
 
-type Plan = {
-  id: number
-  name: string
-  price: number
-  status: string
-  customers: number
-  disk: string
-  bandwidth: string
-  domains: number
-  databases: number
-  emails: number
-  ssl: boolean
-}
 
 const search = ref('')
 const status = ref('all')
-
+const dashboard = ref<boolean>(false)
 const isModalOpen = ref(false)
 const modalType = ref<'create' | 'edit'>('create')
 const selectedPlan = ref<Plan | null>(null)

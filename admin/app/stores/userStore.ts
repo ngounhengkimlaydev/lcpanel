@@ -7,13 +7,13 @@ export const useUserStore = defineStore("user", () => {
   const token = useCookie<string | null>("token", {
     maxAge: 60 * 60 * 24 * 7,
     sameSite: "lax",
-    secure: import.meta.env.PROD,
+    secure: false,
   });
 
   const user = useCookie<UserData | null>("user", {
     maxAge: 60 * 60 * 24 * 7,
     sameSite: "lax",
-    secure: import.meta.env.PROD,
+    secure: false,
     default: () => null,
   });
 

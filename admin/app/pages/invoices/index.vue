@@ -1,25 +1,31 @@
 <template>
     <UDashboardPanel id="invoices">
-        <template #header>
-            <UDashboardNavbar title="Invoices">
-                <template #right>
-                    <UButton icon="i-lucide-plus" label="Create Invoice" @click="isCreateOpen = true" />
-                </template>
-            </UDashboardNavbar>
-        </template>
-
-        <template #body>
+        <template #default>
             <div class="space-y-6">
-                <InvoiceStats />
-
                 <UCard>
+                    <template #header>
+                        <UDashboardNavbar title="Invoices">
+                            <template #right>
+                                <UButton icon="i-lucide-plus" label="Create Invoice" @click="isCreateOpen = true" />
+                            </template>
+                        </UDashboardNavbar>
+                    </template>
+                    <div class="flex space-x-2">
+                        <UButton icon="i-lucide-dices" label="View Invoice Dashboard" @click="dashboard = true" />
+                    </div>
                     <InvoiceToolbar v-model:search="search" v-model:status="status" />
                     <InvoiceTable :data="filteredInvoices" @view="viewInvoice" @paid="markAsPaid" @send="sendInvoice"
                         @download="downloadInvoice" @delete="deleteInvoice" />
+
+                    <InvoiceCreateModal v-model:open="isCreateOpen" @submit="createInvoice" />
+                    <InvoiceViewModal v-model:open="isViewOpen" :invoice="selectedInvoice" />
+                    <USlideover v-model:open="dashboard" title="Customer">
+                        <template #body>
+                            <InvoiceStats />
+                        </template>
+                    </USlideover>
                 </UCard>
             </div>
-            <InvoiceCreateModal v-model:open="isCreateOpen" @submit="createInvoice" />
-            <InvoiceViewModal v-model:open="isViewOpen" :invoice="selectedInvoice" />
         </template>
     </UDashboardPanel>
 </template>
@@ -37,7 +43,7 @@ const isViewOpen = ref(false)
 const selectedInvoice = ref<Invoice | null>(null)
 const search = ref('')
 const status = ref('all')
-
+const dashboard = ref<boolean>(false)
 const invoices = ref([
     { id: 'INV-001', customer: 'LTech Digital', amount: '$15.00', status: 'paid', due_date: '2026-06-01' },
     { id: 'INV-002', customer: 'Nexora Client', amount: '$5.00', status: 'unpaid', due_date: '2026-05-15' },
