@@ -147,6 +147,11 @@ export const useMenu = () => {
         type: "trigger",
         children: [
           {
+            label: "Deployments",
+            to: "/deployments",
+            module_key: moduleKey.DEPLOY,
+          },
+          {
             label: "Git Repositories",
             to: "/deployments/git",
             module_key: moduleKey.GIT_REPO,

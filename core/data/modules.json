@@ -523,5 +523,187 @@
         "checked": 0
       }
     ]
+  },
+  {
+    "id": 27,
+    "module_name": "Deploy",
+    "module_key": "deploy",
+    "permissions": [
+      {
+        "id": 57,
+        "permission_name": "view",
+        "module_id": 27,
+        "created_at": "2026-05-08T00:00:00.000Z",
+        "checked": 0
+      },
+      {
+        "id": 58,
+        "permission_name": "create",
+        "module_id": 27,
+        "created_at": "2026-05-08T00:00:00.000Z",
+        "checked": 0
+      },
+      {
+        "id": 59,
+        "permission_name": "update",
+        "module_id": 27,
+        "created_at": "2026-05-08T00:00:00.000Z",
+        "checked": 0
+      },
+      {
+        "id": 60,
+        "permission_name": "delete",
+        "module_id": 27,
+        "created_at": "2026-05-08T00:00:00.000Z",
+        "checked": 0
+      }
+    ]
+  },
+  {
+    "id": 28,
+    "module_name": "Build Logs",
+    "module_key": "build_logs",
+    "permissions": [
+      {
+        "id": 61,
+        "permission_name": "view",
+        "module_id": 28,
+        "created_at": "2026-05-08T00:00:00.000Z",
+        "checked": 0
+      }
+    ]
+  },
+  {
+    "id": 29,
+    "module_name": "Git History",
+    "module_key": "git_history",
+    "permissions": [
+      {
+        "id": 62,
+        "permission_name": "view",
+        "module_id": 29,
+        "created_at": "2026-05-08T00:00:00.000Z",
+        "checked": 0
+      }
+    ]
+  },
+  {
+    "id": 30,
+    "module_name": "Git Repo",
+    "module_key": "git_repo",
+    "permissions": [
+      {
+        "id": 63,
+        "permission_name": "view",
+        "module_id": 30,
+        "created_at": "2026-05-08T00:00:00.000Z",
+        "checked": 0
+      },
+      {
+        "id": 64,
+        "permission_name": "create",
+        "module_id": 30,
+        "created_at": "2026-05-08T00:00:00.000Z",
+        "checked": 0
+      },
+      {
+        "id": 65,
+        "permission_name": "update",
+        "module_id": 30,
+        "created_at": "2026-05-08T00:00:00.000Z",
+        "checked": 0
+      },
+      {
+        "id": 66,
+        "permission_name": "delete",
+        "module_id": 30,
+        "created_at": "2026-05-08T00:00:00.000Z",
+        "checked": 0
+      }
+    ]
+  },
+  {
+    "id": 31,
+    "module_name": "Database",
+    "module_key": "database",
+    "permissions": [
+      {
+        "id": 67,
+        "permission_name": "view",
+        "module_id": 31,
+        "created_at": "2026-05-08T00:00:00.000Z",
+        "checked": 0
+      }
+    ]
+  },
+  {
+    "id": 32,
+    "module_name": "Create DB",
+    "module_key": "create_db",
+    "permissions": [
+      {
+        "id": 68,
+        "permission_name": "view",
+        "module_id": 32,
+        "created_at": "2026-05-08T00:00:00.000Z",
+        "checked": 0
+      },
+      {
+        "id": 69,
+        "permission_name": "create",
+        "module_id": 32,
+        "created_at": "2026-05-08T00:00:00.000Z",
+        "checked": 0
+      },
+      {
+        "id": 70,
+        "permission_name": "update",
+        "module_id": 32,
+        "created_at": "2026-05-08T00:00:00.000Z",
+        "checked": 0
+      },
+      {
+        "id": 71,
+        "permission_name": "delete",
+        "module_id": 32,
+        "created_at": "2026-05-08T00:00:00.000Z",
+        "checked": 0
+      }
+    ]
+  },
+  {
+    "id": 33,
+    "module_name": "DB Users",
+    "module_key": "db_users",
+    "permissions": [
+      {
+        "id": 72,
+        "permission_name": "view",
+        "module_id": 33,
+        "created_at": "2026-05-08T00:00:00.000Z",
+        "checked": 0
+      },
+      {
+        "id": 73,
+        "permission_name": "create",
+        "module_id": 33,
+        "created_at": "2026-05-08T00:00:00.000Z",
+        "checked": 0
+      },
+      {
+        "id": 74,
+        "permission_name": "update",
+        "module_id": 33,
+        "created_at": "2026-05-08T00:00:00.000Z",
+        "checked": 0
+      },
+      {
+        "id": 75,
+        "permission_name": "delete",
+        "module_id": 33,
+        "created_at": "2026-05-08T00:00:00.000Z",
+        "checked": 0
+      }
+    ]
   }
 ]

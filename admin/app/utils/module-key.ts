@@ -18,40 +18,49 @@ export const moduleKey = {
   SSH_KEY: "ssh_key",
   BLOCK_IP: "block_ip",
   MALWARE_SCAN: "malware_scan",
+
+  DEPLOY: "deploy",
   BUILD_LOGS: "build_logs",
   GIT_HISTORY: "git_history",
   GIT_REPO: "git_repo",
+
   DATABASE: "database",
   CREATE_DB: "create_db",
   DB_USERS: "db_users",
   DB_BACKUPS: "db_backups",
   PHP_MY_ADMIN: "php_my_admin",
+
   FILE_MANAGEMER: "file_manager",
+
   FTP_ACC: "ftp_accounts",
+
   STORAGE_USAGE: "storage_usage",
+
   MAILBOXES: "mialboxes",
   CREATE_MAIL: "create_mail",
   FORWARDER: "forward",
   AUTO_RESPONE: "auto_respone",
   MAIL_LOGS: "mail_logs",
+
   WEBSITES: "websites",
   WEBSITE_CREATE: "website_create",
   DOMAINS: "domains",
   SUBDOMAINS: "subdomains",
   REDIRECTS: "redirects",
+
   NODE_APPS: "node_apps",
   PHP_APPS: "php_apps",
   WORDPRESS: "wordpress",
   ENVIRONMENT_VARIABLES: "environment_variables",
   PM2_PROCESSES: "pm2_processes",
   APP_LOGS: "app_logs",
+
   BACKUPS: "backups",
   BACKUP_SCHEDULES: "backup_schedules",
   BACKUP_RESTORE: "backup_restore",
   REMOTE_STORAGE: "remote_storage",
+
   MONITORING: "monitoring",
   BANDWIDTH: "bandwidth",
   SYS_LOG: "sys_logs",
 } as const;
-
-export type ModuleKey = (typeof moduleKey)[keyof typeof moduleKey];
