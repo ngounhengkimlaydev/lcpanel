@@ -84,12 +84,32 @@ export class AuthService {
 
     if (!user) throw new NotFoundException("User not found");
 
+    const roles = await this.prisma.role.findMany({
+      select: {
+        id: true,
+        user_type_id: true,
+        role_name: true,
+      },
+      where: {
+        user_type: {
+          level: {
+            lte: user.user_type.level,
+          },
+        },
+      },
+      orderBy: {
+        user_type: {
+          level: "desc",
+        },
+      },
+    });
+
     const baseDTO = UserMapper.toDTO(user);
 
     const userDTO = {
       ...baseDTO,
       role_name:
-        baseDTO.role?.role_name === "super_admin"
+        baseDTO.role?.role_name === "Super Admin"
           ? null
           : (baseDTO.role?.role_name ?? null),
     };
@@ -102,6 +122,7 @@ export class AuthService {
       user: userDTO,
       user_type,
       roleModule,
+      roles,
       ...(token && { token, token_type: "bearer" }),
     };
 

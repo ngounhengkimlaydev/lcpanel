@@ -42,7 +42,8 @@ import type { Port } from '~/types'
 
 
 definePageMeta({
-    middleware: ['super-admin']
+    middleware: "alc",
+    moduleKey: moduleKey.PORT,
 })
 
 const search = ref('')

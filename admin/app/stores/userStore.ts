@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import type { PermissionItem, UserData, UserType } from "~/types";
+import type { RoleModule, UserData, UserType } from "~/types";
 
 export const useUserStore = defineStore("user", () => {
   const api = useApiFetch();
@@ -19,31 +19,39 @@ export const useUserStore = defineStore("user", () => {
   
   const userTypes = ref<UserType[]>([]);
   const permissions = ref<string[]>([]);
-  const roles = ref<string[]>([]);
+  const roles = ref<any[]>([]);
+  const roleModule = ref<RoleModule[]>([]);
 
   const isAuthenticated = computed(() => !!token.value);
+
+  const normalizeRole = (roleValue: any) => {
+    if (!roleValue) return null;
+    if (typeof roleValue === "string") return roleValue;
+    return roleValue.role_name || roleValue.role_key || roleValue.name || null;
+  };
 
   const role = computed(() => {
     return (
       user.value?.role?.role_name ||
-      user.value?.role ||
+      normalizeRole(user.value?.role) ||
       user.value?.role_key ||
       user.value?.user_role ||
       user.value?.user_type?.type ||
-      roles.value?.[0] ||
+      normalizeRole(roles.value?.[0]) ||
       null
     );
   });
 
   const isSuperAdmin = computed(() => {
-    return role.value === "super_admin" || role.value === "SUPER_ADMIN";
+    return role.value === "super_admin" || role.value === "SUPER_ADMIN" || role.value === "Super Admin";
   });
 
   const setData = (payload: {
     token?: string | null;
     user?: UserData | null;
-    roles?: string[];
+    roles?: any[];
     permissions?: string[];
+    roleModule?: RoleModule[];
     userTypes?: UserType[];
   }) => {
     if ("token" in payload) {
@@ -61,6 +69,7 @@ export const useUserStore = defineStore("user", () => {
       [];
 
     permissions.value = payload.permissions || payload.user?.permissions || [];
+    roleModule.value = payload.roleModule || [];
     userTypes.value = payload.userTypes || [];
   };
 
@@ -71,6 +80,7 @@ export const useUserStore = defineStore("user", () => {
         user: null,
         roles: [],
         permissions: [],
+        roleModule: [],
         userTypes: [],
       });
       return null;
@@ -82,6 +92,7 @@ export const useUserStore = defineStore("user", () => {
         user: user.value,
         roles: user.value.roles || [],
         permissions: user.value.permissions || [],
+        roleModule: roleModule.value || [],
         userTypes: userTypes.value || [],
       });
     }
@@ -94,6 +105,7 @@ export const useUserStore = defineStore("user", () => {
         user: res.user || res,
         roles: res.roles || res.user?.roles || [],
         permissions: res.permissions || res.user?.permissions || [],
+        roleModule: res.roleModule || res.role_module || [],
         userTypes: res.user_type || [],
       });
 
@@ -104,6 +116,7 @@ export const useUserStore = defineStore("user", () => {
         user: null,
         roles: [],
         permissions: [],
+        roleModule: [],
         userTypes: [],
       });
 
@@ -119,6 +132,7 @@ export const useUserStore = defineStore("user", () => {
       user: res.user || null,
       roles: res.roles || res.user?.roles || [],
       permissions: res.permissions || res.user?.permissions || [],
+      roleModule: res.roleModule || res.role_module || [],
       userTypes: res.user_type || [],
     });
 
@@ -131,6 +145,7 @@ export const useUserStore = defineStore("user", () => {
       user: null,
       roles: [],
       permissions: [],
+      roleModule: [],
       userTypes: [],
     });
 
@@ -138,7 +153,7 @@ export const useUserStore = defineStore("user", () => {
   };
 
   const hasRole = (roleKey: string) => {
-    return roles.value.includes(roleKey) || role.value === roleKey;
+    return roles.value.some((item) => normalizeRole(item) === roleKey) || role.value === roleKey;
   };
 
   const hasPermission = (permission: string) => {
@@ -146,11 +161,27 @@ export const useUserStore = defineStore("user", () => {
     return permissions.value.includes(permission);
   };
 
+  const hasModule = (moduleKey?: string | string[] | null) => {
+    if (!moduleKey || (Array.isArray(moduleKey) && !moduleKey.length)) return true;
+    if (isSuperAdmin.value) return true;
+
+    const requestedKeys = Array.isArray(moduleKey) ? moduleKey : [moduleKey];
+    const allowedKeys = new Set([
+      ...permissions.value,
+      ...roleModule.value.map((item) => item.module_key).filter((key): key is string => Boolean(key)),
+    ]);
+
+    return requestedKeys.some((key) => {
+      return allowedKeys.has(key) || permissions.value.some((permission) => permission.startsWith(`${key}.`));
+    });
+  };
+
   return {
     token,
     user,
     roles,
     role,
+    roleModule,
     permissions,
     isSuperAdmin,
     isAuthenticated,
@@ -161,5 +192,6 @@ export const useUserStore = defineStore("user", () => {
     logout,
     hasRole,
     hasPermission,
+    hasModule,
   };
 });

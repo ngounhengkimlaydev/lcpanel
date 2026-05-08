@@ -38,7 +38,8 @@ import ServiceToolbar from '~/components/services/ServiceToolbar.vue'
 import type { SystemService, SystemServiceStatus } from '~/types'
 
 definePageMeta({
-    middleware: ['super-admin']
+    middleware: "alc",
+    moduleKey: moduleKey.SERVICE,
 })
 
 const fetch = useApiFetch()

@@ -45,7 +45,8 @@ import CronJobFormModal from '~/components/cron-jobs/CronJobFormModal.vue'
 import type { CronJob } from '~/types/cron-job'
 
 definePageMeta({
-    middleware: ['super-admin']
+    middleware: "alc",
+    moduleKey: moduleKey.CRON_JOBS,
 })
 
 const search = ref('')

@@ -47,6 +47,11 @@ import SubscriptionFormModal from '~/components/subscriptions/SubscriptionFormMo
 import SubscriptionViewModal from '~/components/subscriptions/SubscriptionViewModal.vue'
 import SubscriptionChangePlanModal from '~/components/subscriptions/SubscriptionChangePlanModal.vue'
 
+definePageMeta({
+    middleware: "alc",
+    moduleKey: moduleKey.SUBSCRIPTION,
+})
+
 const search = ref('')
 const status = ref('all')
 const dashboard = ref<boolean>(false)

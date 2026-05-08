@@ -182,9 +182,9 @@ type Schema = z.output<typeof schema>
 
 const form = reactive<Schema>({
     id: 0,
-    role_name: '',
+    role_name: null,
     description: '',
-    user_type_id: 0,
+    user_type_id: null,
     permissions: [],
     created_at: '',
 })
@@ -226,9 +226,9 @@ async function getModulePermission() {
 function resetForm() {
     Object.assign(form, {
         id: 0,
-        role_name: '',
+        role_name: null,
         description: '',
-        user_type_id: 0,
+        user_type_id: null,
         permissions: [],
         created_at: '',
     })
@@ -251,9 +251,9 @@ function setEditForm(data: any) {
     }))
 
     form.id = data.role.id
-    form.role_name = data.role.role_name || ''
+    form.role_name = data.role.role_name || null
     form.description = data.role.role_desc || ''
-    form.user_type_id = data.role.user_type_id || 0
+    form.user_type_id = data.role.user_type_id || null
 
     form.permissions = permissionModules.value.flatMap((module: any) =>
         module.permissions
@@ -267,27 +267,22 @@ function setEditForm(data: any) {
     form.created_at = data.role.created_at || ''
 }
 
-async function getRoleById(id: number) {
-    const res: any = await api.get(`/role/${id}`, {}, false)
-
-    return res.data || res.role || res
-}
 
 watch(open, async (value) => {
-  if (!value) return
+    if (!value) return
 
-  if (!userStore.userTypes.length) {
-    await userStore.initStore()
-  }
+    if (!userStore.userTypes.length) {
+        await userStore.initStore()
+    }
 
-  if (props.type === 'edit' && props.role?.id) {
-    const res: any = await api.get(`/role/${props.role.id}`, {}, false)
+    if (props.type === 'edit' && props.role?.id) {
+        const res: any = await api.get(`/role/${props.role.id}`, {}, false)
 
-    setEditForm(res)
-  } else {
-    resetForm()
-    await getModulePermission()
-  }
+        setEditForm(res)
+    } else {
+        resetForm()
+        await getModulePermission()
+    }
 })
 
 function closeModal() {

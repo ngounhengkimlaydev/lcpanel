@@ -9,6 +9,7 @@ export class RoleRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(data: CreateRoleDto) {
+    delete data.id;
     return await this.prisma.role.create({
       data: {
         role_name: data.role_name,
@@ -117,13 +118,11 @@ export class RoleRepository {
         {
           roleName: {
             contains: filter.search,
-            mode: "insensitive",
           },
         },
         {
           code: {
             contains: filter.search,
-            mode: "insensitive",
           },
         },
       ];

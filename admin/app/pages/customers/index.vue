@@ -38,7 +38,8 @@ import CustomerFormModal from '~/components/customers/CustomerFormModal.vue'
 import type { Customer } from '~/types'
 
 definePageMeta({
-  middleware: ['super-admin']
+  middleware: "alc",
+  moduleKey: moduleKey.CUSTOMER,
 })
 
 

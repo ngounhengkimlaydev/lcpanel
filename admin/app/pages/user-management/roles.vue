@@ -35,6 +35,11 @@ import RoleFormModal from '~/components/user-management/RoleFormModal.vue'
 import RoleTable from '~/components/user-management/RoleTable.vue'
 import type { Role } from '~/types'
 
+definePageMeta({
+    middleware: "alc",
+    moduleKey: moduleKey.ROLE,
+})
+
 const search = ref('')
 const page = ref(1)
 const pageSize = ref(10)
@@ -96,7 +101,7 @@ const filteredRoles = computed(() => {
         const keyword = search.value.toLowerCase()
 
         const matchSearch =
-            item.role_name.toLowerCase().includes(keyword) ||
+            item.role_name!.toLowerCase().includes(keyword) ||
             item.description.toLowerCase().includes(keyword)
 
 
@@ -121,7 +126,7 @@ const columns: TableColumn<Role>[] = [
                 h(
                     'p',
                     { class: 'font-medium text-highlighted' },
-                    formatText(row.original.role_name)
+                    formatText(row.original.role_name!)
                 ),
                 h(
                     'p',

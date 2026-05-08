@@ -219,6 +219,11 @@
 </template>
 
 <script setup lang="ts">
+definePageMeta({
+  middleware: "alc",
+  moduleKey: moduleKey.DASHBOARD,
+})
+
 const fetch = useApiFetch()
 const { $socket } = useNuxtApp();
 const stats = ref<any>(null)

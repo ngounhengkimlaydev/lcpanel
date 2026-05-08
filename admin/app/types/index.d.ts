@@ -89,6 +89,13 @@ export type UserData = {
   };
 };
 
+export type RoleModule = {
+  role_id?: number;
+  module_id?: number;
+  module_key?: string;
+  permissions?: PermissionItem[];
+};
+
 export type UserType = {
   id: number;
   type: string;
@@ -154,10 +161,10 @@ export type Invoice = {
 
 export type Role = {
   id: number;
-  role_name: string;
+  role_name: string | null;
   description: string;
   user_type: string;
-  user_type_id: number;
+  user_type_id: null | number;
   permissions: string[];
   created_at: string;
 };

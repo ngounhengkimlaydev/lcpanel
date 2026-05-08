@@ -36,7 +36,10 @@ import ConfirmModal from '~/components/ConfirmModal.vue'
 import PermissionModuleModal from '~/components/user-management/PermissionModuleModal.vue'
 import PermissionTable from '~/components/user-management/PermissionTable.vue'
 import type { ModulePermission } from '~/types'
-
+definePageMeta({
+    middleware: "alc",
+    moduleKey: moduleKey.PERMISSION,
+})
 
 const isModalOpen = ref(false)
 const modalType = ref<'create' | 'edit'>('create')

@@ -36,7 +36,10 @@ import type { TableColumn, DropdownMenuItem } from '@nuxt/ui'
 import AdminTable from '~/components/user-management/AdminTable.vue'
 import UserFormModal from '~/components/user-management/UserFormModal.vue'
 import { UserStatus, type AdminUser, type RoleOption } from '~/types/admin'
-
+definePageMeta({
+    middleware: "alc",
+    moduleKey: moduleKey.USER,
+})
 const api = useApiFetch()
 const toast = useToast()
 

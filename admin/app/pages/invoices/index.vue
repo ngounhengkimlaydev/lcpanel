@@ -40,6 +40,11 @@ import InvoiceToolbar from '~/components/invoices/InvoiceToolbar.vue'
 import InvoiceViewModal from '~/components/invoices/InvoiceViewModal.vue'
 import type { Invoice } from '~/types'
 
+definePageMeta({
+    middleware: "alc",
+    moduleKey: moduleKey.INVOICE,
+})
+
 const isCreateOpen = ref(false)
 const isViewOpen = ref(false)
 const selectedInvoice = ref<Invoice | null>(null)

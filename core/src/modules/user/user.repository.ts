@@ -26,13 +26,13 @@ export class UserRepository {
     return this.prisma.user.update({
       where: { id },
       data: {
-        full_name: dto.fullName,
+        full_name: dto.full_name,
         username: dto.username,
         password: dto.password,
         email: dto.email,
         phone: dto.phone,
-        role_id: dto.roleId,
-        user_type_id: dto.userTypeId,
+        role_id: dto.role_id,
+        user_type_id: dto.user_type_id,
         status: dto.status,
       },
     });
@@ -84,20 +84,17 @@ export class UserRepository {
         {
           full_name: {
             contains: keyword,
-            mode: "insensitive",
           },
         },
         {
           username: {
             contains: keyword,
-            mode: "insensitive",
           },
         },
         {
           role: {
             role_name: {
               contains: keyword,
-              mode: "insensitive",
             },
           },
         },
@@ -106,6 +103,11 @@ export class UserRepository {
 
     const [data, total] = await Promise.all([
       this.prisma.user.findMany({
+        where: {
+          NOT: {
+            user_type_id: 1,
+          },
+        },
         skip,
         take: tableSize,
         orderBy: {

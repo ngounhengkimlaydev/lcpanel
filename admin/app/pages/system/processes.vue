@@ -42,7 +42,8 @@ import ProcessFormModal from '~/components/processes/ProcessFormModal.vue'
 import type { ServerProcess } from '~/types'
 
 definePageMeta({
-    middleware: ['super-admin']
+    middleware: "alc",
+    moduleKey: moduleKey.PROCESS,
 })
 
 const search = ref('')

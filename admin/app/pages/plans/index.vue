@@ -35,6 +35,10 @@ import PlanToolbar from '~/components/plans/PlanToolbar.vue'
 import PlanFormModal from '~/components/plans/PlanFormModal.vue'
 import type { Plan } from '~/types'
 
+definePageMeta({
+  middleware: "alc",
+  moduleKey: moduleKey.PLAN,
+})
 
 const search = ref('')
 const status = ref('all')

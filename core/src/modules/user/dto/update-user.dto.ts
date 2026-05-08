@@ -1,37 +1,44 @@
-import { IsBoolean, IsEmail, IsNumber, IsOptional, IsString } from 'class-validator';
+import {
+  IsBoolean,
+  IsEmail,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from "class-validator";
 
 export class UpdateUserDTO {
-    @IsString()
-    fullName!: string;
+  @IsString()
+  full_name!: string;
 
-    @IsString()
-    username!: string;
+  @IsString()
+  username!: string;
 
-    @IsOptional()
-    @IsEmail()
-    email?: string;
+  @IsOptional()
+  @IsEmail()
+  email?: string;
 
-    @IsOptional()
-    @IsString()
-    phone?: string;
+  @IsOptional()
+  @IsString()
+  phone?: string;
 
-    @IsString()
-    password!: string;
+  @IsString()
+  @IsOptional()
+  password?: string;
 
-    @IsNumber()
-    roleId!: number;
+  @IsNumber()
+  role_id!: number;
 
-    @IsNumber()
-    userTypeId!: number;
+  @IsNumber()
+  user_type_id!: number;
 
-    // @IsOptional()
-    // @IsNumber()
-    // company_id?: number | null;
+  // @IsOptional()
+  // @IsNumber()
+  // company_id?: number | null;
 
-    // @IsOptional()
-    // @IsNumber()
-    // branchId?: number | null;
+  // @IsOptional()
+  // @IsNumber()
+  // branchId?: number | null;
 
-    @IsNumber()
-    status?: number | 1;
+  @IsNumber()
+  status?: number | 1;
 }

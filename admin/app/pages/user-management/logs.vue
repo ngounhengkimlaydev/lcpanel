@@ -34,6 +34,10 @@
 import type { TableColumn } from '@nuxt/ui'
 import type { ActivityLog } from '~/types'
 
+definePageMeta({
+    middleware: "alc",
+    moduleKey: moduleKey.ACTIVITY_LOG,
+})
 
 const search = ref('')
 const moduleFilter = ref('all')
