@@ -1,8 +1,8 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { CreateUserDTO } from './dto/create-user.dto';
-import { UpdateUserDTO } from './dto/update-user.dto';
-import { Prisma } from '@prisma/client';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { CreateUserDTO } from "./dto/create-user.dto";
+import { UpdateUserDTO } from "./dto/update-user.dto";
+import { Prisma } from "@prisma/client";
 @Injectable()
 export class UserRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -10,13 +10,13 @@ export class UserRepository {
   async createUser(dto: CreateUserDTO) {
     return this.prisma.user.create({
       data: {
-        full_name: dto.fullName,
+        full_name: dto.full_name,
         username: dto.username,
         password: dto.password,
         email: dto.email,
         phone: dto.phone,
-        role_id: dto.roleId,
-        user_type_id: dto.userTypeId,
+        role_id: dto.role_id,
+        user_type_id: dto.user_type_id,
         status: dto.status,
       },
     });
@@ -63,14 +63,14 @@ export class UserRepository {
     tableSize: number;
     filter?: { search?: string };
     sortBy?: string;
-    sortType?: 'asc' | 'desc';
+    sortType?: "asc" | "desc";
   }) {
     const {
       page,
       tableSize,
       filter = {},
-      sortBy = 'id',
-      sortType = 'desc',
+      sortBy = "id",
+      sortType = "desc",
     } = params;
 
     const skip = (page - 1) * tableSize;
@@ -84,20 +84,20 @@ export class UserRepository {
         {
           full_name: {
             contains: keyword,
-            mode: 'insensitive',
+            mode: "insensitive",
           },
         },
         {
           username: {
             contains: keyword,
-            mode: 'insensitive',
+            mode: "insensitive",
           },
         },
         {
           role: {
             role_name: {
               contains: keyword,
-              mode: 'insensitive',
+              mode: "insensitive",
             },
           },
         },
@@ -116,6 +116,8 @@ export class UserRepository {
           full_name: true,
           username: true,
           created_at: true,
+          email: true,
+          status: true,
           role: {
             select: {
               role_name: true,

@@ -19,12 +19,9 @@ export class UserMapper {
       image: user.image ?? undefined,
       roleId: user.role_id,
       userTypeId: user.user_type_id,
-      // companyId: user.company_id ?? null,
-      // branchId: user.branch_id ?? null,
       status: user.status,
       createdAt: user.created_at,
       updatedAt: user.updated_at,
-      // Relations: nullable
       role: user.role ? RoleMapper.toDTO(user.role) : undefined,
     };
   }

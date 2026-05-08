@@ -9,6 +9,8 @@
                                 User Roles
                             </h3>
                             <div class="flex space-x-2">
+                                <UButton icon="i-lucide-refresh-cw" color="neutral" variant="outline"
+                                    @click="getRoles" />
                                 <UButton icon="i-lucide-shield-plus" label="Create Role" @click="openCreateModal" />
                             </div>
                         </div>

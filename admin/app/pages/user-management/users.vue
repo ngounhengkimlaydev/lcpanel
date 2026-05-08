@@ -5,64 +5,56 @@
                 <UCard>
                     <template #header>
                         <div class="flex items-center justify-between">
-                            <h3 class="text-lg font-semibold">
-                                Admin Users
-                            </h3>
+                            <h3 class="text-lg font-semibold">Admin Users</h3>
                             <div class="flex space-x-2">
-                                <!-- <UButton icon="i-lucide-dices" label="View Customer Dashboard" @click="dashboard = true" /> -->
+                                <UButton icon="i-lucide-refresh-cw" color="neutral" variant="outline"
+                                    @click="getUsers" />
                                 <UButton icon="i-lucide-user-plus" label="Create User" @click="openCreateModal" />
                             </div>
                         </div>
                     </template>
+
                     <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <UInput v-model="search" icon="i-lucide-search" placeholder="Search user..."
-                            class="w-full sm:max-w-sm" />
+                            class="w-full sm:max-w-sm" @keyup.enter="getUsers" />
+
                         <USelect v-model="status" :items="statusItems" class="w-44" />
                     </div>
-                    <Table :data="filteredUsers" :columns="columns" />
+
+                    <AdminTable :data="users" :columns="columns" :total="total" :page="page" :page-size="pageSize"
+                        @update:page="page = $event" />
                 </UCard>
-                <UserFormModal v-model:open="isModalOpen" :type="modalType" :user="selectedUser"
+
+                <UserFormModal v-model:open="isModalOpen" :type="modalType" :user="selectedUser" :roles="roles"
                     @submit="handleSubmit" />
             </div>
         </template>
     </UDashboardPanel>
 </template>
-
 <script setup lang="ts">
 import type { TableColumn, DropdownMenuItem } from '@nuxt/ui'
-import Table from '~/components/user-management/AdminTable.vue'
+import AdminTable from '~/components/user-management/AdminTable.vue'
 import UserFormModal from '~/components/user-management/UserFormModal.vue'
-import type { AdminUser } from '~/types/admin'
+import { UserStatus, type AdminUser, type RoleOption } from '~/types/admin'
 
-
+const api = useApiFetch()
+const toast = useToast()
 
 const search = ref('')
 const status = ref('all')
+const page = ref(1)
+const pageSize = ref(10)
+const total = ref(0)
 
 const isModalOpen = ref(false)
 const modalType = ref<'create' | 'edit'>('create')
 const selectedUser = ref<AdminUser | null>(null)
 
-const users = ref<AdminUser[]>([
-    {
-        id: 1,
-        name: 'Lay Admin',
-        email: 'admin@ltech.digital',
-        role: 'Super Admin',
-        status: 'active',
-        last_login: '2026-05-05',
-        created_at: '2026-05-01'
-    },
-    {
-        id: 2,
-        name: 'Support User',
-        email: 'support@ltech.digital',
-        role: 'Support',
-        status: 'inactive',
-        last_login: '2026-05-03',
-        created_at: '2026-04-28'
-    }
-])
+const users = ref<AdminUser[]>([])
+const roles = ref<RoleOption[]>([])
+
+// replace this with auth user_type_id
+const userTypeId = ref(1)
 
 const statusItems = [
     { label: 'All Status', value: 'all' },
@@ -71,95 +63,71 @@ const statusItems = [
     { label: 'Suspended', value: 'suspended' }
 ]
 
-const filteredUsers = computed(() => {
-    return users.value.filter((item) => {
-        const keyword = search.value.toLowerCase()
-
-        const matchSearch =
-            item.name.toLowerCase().includes(keyword) ||
-            item.email.toLowerCase().includes(keyword) ||
-            item.role.toLowerCase().includes(keyword)
-
-        const matchStatus = status.value === 'all' || item.status === status.value
-
-        return matchSearch && matchStatus
+async function getUsers() {
+    const res: any = await api.paginate('/user', {
+        page: page.value,
+        table_size: pageSize.value,
+        filter: {
+            search: search.value,
+            status: status.value
+        },
+        sort_by: 'id',
+        sort_type: 'desc'
     })
+
+    users.value = res.data || res.users || []
+    total.value = res.total || res.meta?.total || 0
+}
+
+async function getAllRole() {
+    const res: any = await api.get(`/user/get_role/${userTypeId.value}`)
+
+    const data = res.data || res.roles || res || []
+
+    roles.value = data.map((item: any) => ({
+        label: item.role_name
+            ? item.role_name.replaceAll('_', ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())
+            : '-',
+        value: item.id
+    }))
+}
+
+onMounted(async () => {
+    await Promise.all([getUsers(), getAllRole()])
 })
 
-const columns: TableColumn<AdminUser>[] = [
-    {
-        accessorKey: 'name',
-        header: 'User',
-        cell: ({ row }) => h('div', { class: 'flex items-center gap-3' }, [
-            h('div', {
-                class: 'flex size-10 items-center justify-center rounded-full bg-primary/10 font-bold text-primary'
-            }, row.original.name.charAt(0)),
-            h('div', {}, [
-                h('p', { class: 'font-medium text-highlighted' }, row.original.name),
-                h('p', { class: 'text-sm text-muted' }, row.original.email)
-            ])
-        ])
-    },
-    { accessorKey: 'role', header: 'Role' },
-    {
-        accessorKey: 'status',
-        header: 'Status',
-        cell: ({ row }) => {
-            const colorMap: Record<string, 'success' | 'error' | 'neutral' | 'warning'> = {
-                active: 'success',
-                inactive: 'neutral',
-                suspended: 'error',
-                pending: 'warning'
-            }
+watch([page, status], getUsers)
 
-            return h(resolveComponent('UBadge'), {
-                color: colorMap[row.original.status] || 'neutral',
-                variant: 'soft',
-                class: 'capitalize'
-            }, {
-                default: () => row.original.status
-            })
-        }
-    },
-    { accessorKey: 'last_login', header: 'Last Login' },
-    { accessorKey: 'created_at', header: 'Created At' },
-    {
-        id: 'actions',
-        header: '',
-        cell: ({ row }) => {
-            const items: DropdownMenuItem[][] = [
-                [
-                    {
-                        label: 'Edit',
-                        icon: 'i-lucide-pencil',
-                        onSelect: () => openEditModal(row.original)
-                    },
-                    {
-                        label: row.original.status === 'active' ? 'Suspend' : 'Activate',
-                        icon: row.original.status === 'active' ? 'i-lucide-ban' : 'i-lucide-check-circle',
-                        onSelect: () => toggleStatus(row.original)
-                    }
-                ],
-                [
-                    {
-                        label: 'Delete',
-                        icon: 'i-lucide-trash',
-                        color: 'error',
-                        onSelect: () => deleteUser(row.original)
-                    }
-                ]
-            ]
+async function handleSubmit(payload: AdminUser) {
+    const body: any = { ...payload }
 
-            return h(resolveComponent('UDropdownMenu'), { items }, {
-                default: () => h(resolveComponent('UButton'), {
-                    icon: 'i-lucide-ellipsis',
-                    color: 'neutral',
-                    variant: 'ghost'
-                })
-            })
-        }
+    if (modalType.value === 'edit' && !body.password) {
+        delete body.password
+        delete body.password_confirmation
     }
-]
+
+    if (modalType.value === 'create') {
+        await api.post('/user', body)
+        toast.add({ title: 'User created', color: 'success' })
+    } else {
+        await api.put(`/user/${payload.id}`, body)
+        toast.add({ title: 'User updated', color: 'success' })
+    }
+
+    isModalOpen.value = false
+    await getUsers()
+}
+
+async function deleteUser(user: AdminUser) {
+    await api.delete(`/user/${user.id}`)
+
+    toast.add({
+        title: 'User deleted',
+        color: 'success'
+    })
+
+    await getUsers()
+}
 
 function openCreateModal() {
     modalType.value = 'create'
@@ -173,35 +141,110 @@ function openEditModal(user: AdminUser) {
     isModalOpen.value = true
 }
 
-function handleSubmit(payload: AdminUser) {
-    if (modalType.value === 'create') {
-        users.value.unshift({
-            ...payload,
-            id: Date.now(),
-            last_login: '-',
-            created_at: new Date().toISOString().slice(0, 10)
-        })
-    } else {
-        const current = users.value.find((item) => item.id === payload.id)
-        if (!current) return
+const columns: TableColumn<AdminUser>[] = [
+    {
+        accessorKey: 'full_name',
+        header: 'User',
+        cell: ({ row }) =>
+            h('div', { class: 'flex items-center gap-3' }, [
+                h(
+                    'div',
+                    { class: 'flex size-10 items-center justify-center rounded-full bg-primary/10 font-bold text-primary' },
+                    row.original.full_name?.charAt(0) || 'U'
+                ),
+                h('div', {}, [
+                    h('p', { class: 'font-medium text-highlighted' }, row.original.full_name || '-'),
+                    h('p', { class: 'text-sm text-muted' }, row.original.email || '-')
+                ])
+            ])
+    },
+    {
+        accessorKey: 'username',
+        header: 'Username'
+    },
+    {
+        accessorKey: 'role_name',
+        header: 'Role',
+        cell: ({ row }) =>
+            h(resolveComponent('UBadge'), {
+                color: 'neutral',
+                variant: 'soft',
+                class: 'capitalize'
+            }, {
+                default: () => row.original.role_name || '-'
+            })
+    },
+    {
+        accessorKey: 'status',
+        header: 'Status',
+        cell: ({ row }) =>
+            h(resolveComponent('UBadge'), {
+                color: colorMap[row.original.status],
+                variant: 'soft',
+                class: 'capitalize'
+            }, {
+                default: () => getStatusLabel(row.original.status)
+            })
+    },
+    {
+        accessorKey: 'created_at',
+        header: 'Created At',
+        cell: ({ row }) =>
+            h('span', { class: 'text-sm text-muted' },
+                row.original.created_at ? new Date(row.original.created_at).toLocaleDateString() : '-'
+            )
+    },
+    {
+        id: 'actions',
+        header: '',
+        cell: ({ row }) => {
+            const items: DropdownMenuItem[][] = [
+                [
+                    {
+                        label: 'Edit',
+                        icon: 'i-lucide-pencil',
+                        onSelect: () => openEditModal(row.original)
+                    }
+                ],
+                [
+                    {
+                        label: 'Delete',
+                        icon: 'i-lucide-trash',
+                        color: 'error',
+                        onSelect: () => deleteUser(row.original)
+                    }
+                ]
+            ]
 
-        current.name = payload.name
-        current.email = payload.email
-        current.role = payload.role
-        current.status = payload.status
+            return h(resolveComponent('UDropdownMenu'), { items }, {
+                default: () =>
+                    h(resolveComponent('UButton'), {
+                        icon: 'i-lucide-ellipsis',
+                        color: 'neutral',
+                        variant: 'ghost'
+                    })
+            })
+        }
     }
+]
+function getStatusLabel(status: UserStatus) {
+    switch (status) {
+        case UserStatus.ACTIVE:
+            return 'active'
 
-    isModalOpen.value = false
+        case UserStatus.INACTIVE:
+            return 'inactive'
+
+        case UserStatus.SUSPENDED:
+            return 'suspended'
+
+        default:
+            return '-'
+    }
 }
-
-function toggleStatus(user: AdminUser) {
-    const current = users.value.find((item) => item.id === user.id)
-    if (!current) return
-
-    current.status = current.status === 'active' ? 'suspended' : 'active'
-}
-
-function deleteUser(user: AdminUser) {
-    users.value = users.value.filter((item) => item.id !== user.id)
+const colorMap: Record<UserStatus, 'success' | 'error' | 'neutral'> = {
+    [UserStatus.ACTIVE]: 'success',
+    [UserStatus.INACTIVE]: 'neutral',
+    [UserStatus.SUSPENDED]: 'error'
 }
 </script>

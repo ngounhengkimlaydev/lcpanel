@@ -6,7 +6,7 @@ export async function seedRole(prisma: PrismaService) {
   const ROLE = [
     {
       id: 1,
-      role_name: 'super_admin',
+      role_name: 'Super Admin',
       role_desc: '',
       user_type_id: 1,
       created_by: 1,
