@@ -63,4 +63,8 @@ export const moduleKey = {
   MONITORING: "monitoring",
   BANDWIDTH: "bandwidth",
   SYS_LOG: "sys_logs",
+
+  TICKETS:"tickets",
+  // KNOWLEDGE_BASE: 'knowledge_base',
+  // ANNOUNCEMENT: 'announcement',
 } as const;

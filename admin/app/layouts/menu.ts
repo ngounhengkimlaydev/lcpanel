@@ -408,6 +408,7 @@ export const useMenu = () => {
           {
             label: "Tickets",
             to: "/support/tickets",
+            module_key: moduleKey.TICKETS,
           },
           {
             label: "Knowledge Base",

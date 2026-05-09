@@ -175,6 +175,8 @@
 </template>
 
 <script setup lang="ts">
+import SummaryItem from './SummaryItem.vue'
+
 type DeployStatus = 'success' | 'deploying' | 'failed' | 'pending'
 
 interface Deployment {

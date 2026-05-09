@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { DropdownMenuItem } from '@nuxt/ui'
-import type { LocaleCode } from '~/types';
-const { locale, setLocale } = useI18n()
+// import type { LocaleCode } from '~/types';
+// const { locale, setLocale } = useI18n()
 defineProps<{
   collapsed?: boolean
 }>()
@@ -11,15 +11,15 @@ const appConfig = useAppConfig()
 
 const colors = ['red', 'orange', 'amber', 'yellow', 'lime', 'green', 'emerald', 'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple', 'fuchsia', 'pink', 'rose']
 const neutrals = ['slate', 'gray', 'zinc', 'neutral', 'stone']
-const languages: {
-  label: string
-  value: LocaleCode
-  icon: string
-}[] = [
-    { label: 'English', value: 'en', icon: 'i-circle-flags-us' },
-    { label: 'ខ្មែរ', value: 'km', icon: 'i-circle-flags-kh' },
-    { label: '中文', value: 'zh', icon: 'i-circle-flags-cn' }
-  ]
+// const languages: {
+//   label: string
+//   value: LocaleCode
+//   icon: string
+// }[] = [
+//     { label: 'English', value: 'en', icon: 'i-circle-flags-us' },
+//     { label: 'ខ្មែរ', value: 'km', icon: 'i-circle-flags-kh' },
+//     { label: '中文', value: 'zh', icon: 'i-circle-flags-cn' }
+//   ]
 const user = ref({
   name: 'Ngoun Hengkimlay',
   avatar: {
@@ -37,22 +37,22 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
   icon: 'i-lucide-user',
   to: '/settings/security'
 },],
-[
-  {
-    label: 'Language',
-    icon: 'i-lucide-languages',
-    children: languages.map(lang => ({
-      label: lang.label,
-      icon: lang.icon,
-      type: 'checkbox',
-      checked: locale.value === lang.value,
-      onSelect: (e: Event) => {
-        e.preventDefault()
-        setLocale(lang.value)
-      }
-    }))
-  },
-],
+// [
+//   {
+//     label: 'Language',
+//     icon: 'i-lucide-languages',
+//     children: languages.map(lang => ({
+//       label: lang.label,
+//       icon: lang.icon,
+//       type: 'checkbox',
+//       checked: locale.value === lang.value,
+//       onSelect: (e: Event) => {
+//         e.preventDefault()
+//         setLocale(lang.value)
+//       }
+//     }))
+//   },
+// ],
 [{
   label: 'Theme',
   icon: 'i-lucide-palette',
