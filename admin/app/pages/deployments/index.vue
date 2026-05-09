@@ -186,73 +186,33 @@ const statusOptions = [
     { label: "Pending", value: "pending" },
 ]
 
-const stats = [
+const api = useApiFetch()
+const toast = useToast()
+
+const stats = ref([
     {
         label: "Total Projects",
-        value: "12",
+        value: "0",
         icon: "i-lucide-folder-git-2",
     },
     {
         label: "Successful",
-        value: "9",
+        value: "0",
         icon: "i-lucide-circle-check",
     },
     {
         label: "Deploying",
-        value: "2",
+        value: "0",
         icon: "i-lucide-loader",
     },
     {
         label: "Failed",
-        value: "1",
+        value: "0",
         icon: "i-lucide-circle-x",
     },
-]
-
-const deployments = ref<Deployment[]>([
-    {
-        id: 1,
-        name: "lcpanel-admin",
-        description: "Nuxt admin dashboard for managing hosting services.",
-        framework: "Nuxt",
-        branch: "main",
-        environment: "Production",
-        domain: "panel.ltech.digital",
-        commit: "a82f13c",
-        lastDeploy: "2 minutes ago",
-        buildTime: "1m 24s",
-        status: "success",
-        icon: "i-simple-icons-nuxtdotjs",
-    },
-    {
-        id: 2,
-        name: "lcpanel-core",
-        description: "NestJS API service with Prisma, PM2, and server control.",
-        framework: "NestJS",
-        branch: "main",
-        environment: "Production",
-        domain: "api.ltech.digital",
-        commit: "f91b22a",
-        lastDeploy: "Deploying now",
-        buildTime: "Running",
-        status: "deploying",
-        icon: "i-simple-icons-nestjs",
-    },
-    {
-        id: 3,
-        name: "client-website",
-        description: "Laravel website hosted with PHP and Nginx.",
-        framework: "Laravel",
-        branch: "production",
-        environment: "Production",
-        domain: "client.com",
-        commit: "c34e901",
-        lastDeploy: "1 hour ago",
-        buildTime: "42s",
-        status: "failed",
-        icon: "i-simple-icons-laravel",
-    },
 ])
+
+const deployments = ref<Deployment[]>([])
 
 const settingOpen = ref(false)
 const selectedProject = ref<Deployment | null>(null)
@@ -264,12 +224,32 @@ function openSettings(app: Deployment) {
     settingOpen.value = true
 }
 
-function updateProjectSettings(payload: any) {
-    console.log("save settings", payload)
+onMounted(getDeployments)
+
+async function getDeployments() {
+    const res: any = await api.get('/deployments')
+
+    deployments.value = res.data || []
+    stats.value = res.stats || stats.value
 }
 
-function deleteProject(project: Deployment) {
-    deployments.value = deployments.value.filter((item) => item.id !== project.id)
+async function updateProjectSettings(payload: any) {
+    toast.add({
+        title: 'Settings saved',
+        description: payload?.name ? `${payload.name} settings updated.` : undefined,
+        color: 'success',
+    })
+}
+
+async function deleteProject(project: Deployment) {
+    await api.delete(`/deployments/projects/${project.id}`)
+
+    toast.add({
+        title: 'Deployment deleted',
+        color: 'success',
+    })
+
+    await getDeployments()
 }
 
 function getActions(app: Deployment) {
@@ -306,12 +286,27 @@ function openDetails(app: Deployment) {
     detailOpen.value = true
 }
 
-function deployProject(project: Deployment) {
-    console.log('deploy project', project)
+async function deployProject(project: Deployment) {
+    await api.post(`/deployments/projects/${project.id}/pull`, {
+        install: true,
+        build: true,
+        restart: true,
+    })
+
+    toast.add({
+        title: 'Deployment started',
+        color: 'success',
+    })
+
+    await getDeployments()
 }
 
 function rollbackProject(project: Deployment) {
-    console.log('rollback project', project)
+    toast.add({
+        title: 'Rollback is not available yet',
+        description: `${project.name} does not have stored rollback versions yet.`,
+        color: 'neutral',
+    })
 }
 const filteredDeployments = computed(() => {
     const keyword = search.value.toLowerCase().trim()

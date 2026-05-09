@@ -78,7 +78,8 @@
                                 </div>
 
                                 <div class="flex gap-2">
-                                    <UButton icon="i-lucide-refresh-cw" color="neutral" variant="soft" size="sm">
+                                    <UButton icon="i-lucide-refresh-cw" color="neutral" variant="soft" size="sm"
+                                        @click="getLogs">
                                         Refresh
                                     </UButton>
 
@@ -155,83 +156,24 @@ const statusOptions = [
     { label: "Cancelled", value: "cancelled" },
 ]
 
-const logs = ref<BuildLog[]>([
-    {
-        id: 1,
-        project: "lcpanel-admin",
-        branch: "main",
-        commit: "a82f13c - update deploy page",
-        status: "success",
-        duration: "1m 24s",
-        createdAt: "2 minutes ago",
-        installTime: "32s",
-        buildTime: "44s",
-        deployTime: "8s",
-        output: `$ git pull origin main
-Already up to date.
+const api = useApiFetch()
+const logs = ref<BuildLog[]>([])
+const selectedLog = ref<BuildLog | null>(null)
 
-$ pnpm install
-Packages are up to date.
+onMounted(getLogs)
 
-$ pnpm build
-Nuxt build completed successfully.
+async function getLogs() {
+    const res: any = await api.get('/deployments/build-logs')
+    const data: BuildLog[] = res.data || []
 
-$ pm2 restart lcpanel-admin
-Application restarted successfully.
+    logs.value = data
 
-Deployment completed.`,
-    },
-    {
-        id: 2,
-        project: "lcpanel-core",
-        branch: "main",
-        commit: "f91b22a - add deployment api",
-        status: "running",
-        duration: "Running",
-        createdAt: "Now",
-        installTime: "21s",
-        buildTime: "Running",
-        deployTime: "-",
-        output: `$ git pull origin main
-Updating source code...
+    const selectedLogExists = data.some((log) => log.id === selectedLog.value?.id)
 
-$ pnpm install
-Installing dependencies...
-
-$ pnpm prisma generate
-Prisma client generated.
-
-$ pnpm build
-Building NestJS application...`,
-    },
-    {
-        id: 3,
-        project: "client-website",
-        branch: "production",
-        commit: "c34e901 - fix homepage",
-        status: "failed",
-        duration: "42s",
-        createdAt: "1 hour ago",
-        installTime: "18s",
-        buildTime: "24s",
-        deployTime: "-",
-        output: `$ git pull origin production
-Source updated.
-
-$ composer install
-Dependencies installed.
-
-$ php artisan migrate --force
-Migration completed.
-
-$ npm run build
-Build failed: missing environment variable APP_URL.
-
-Deployment failed.`,
-    },
-])
-
-const selectedLog = ref<BuildLog | null>(logs.value[0] ?? null)
+    if (!selectedLog.value || !selectedLogExists) {
+        selectedLog.value = data[0] || null
+    }
+}
 
 const filteredLogs = computed(() => {
     const keyword = search.value.toLowerCase().trim()

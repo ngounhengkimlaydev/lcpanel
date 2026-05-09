@@ -71,6 +71,7 @@ const selectedRepo = ref<GitRepository | null>(null)
 
 const form = reactive<GitImportForm>({
   projectName: "",
+  repoUrl: "",
   branch: "main",
   framework: "Node.js",
   rootDirectory: "./",
@@ -119,18 +120,30 @@ onMounted(async () => {
 watch(selectedRepo, (repo) => {
   if (!repo) return
 
-  form.projectName = repo.name.split("/").pop() || repo.name
+  if (repo.provider === "manual") {
+    form.projectName = ""
+    form.repoUrl = ""
+  } else {
+    form.projectName = repo.name.split("/").pop() || repo.name
+    form.repoUrl = repo.repoUrl
+  }
+
   form.branch = repo.branch
   form.framework = repo.framework
 })
 
 async function connectProvider(provider: GitProvider) {
   if (provider.key === "manual") {
-    toast.add({
-      title: "Manual Git URL",
-      description: "Open your manual import modal or page here.",
-      color: "primary",
-    })
+    selectedRepo.value = {
+      id: Date.now() * -1,
+      repositoryId: `manual-${Date.now()}`,
+      provider: "manual",
+      name: "Manual Git Repository",
+      description: "Import from a public HTTPS URL or an SSH URL configured on this server.",
+      branch: form.branch || "main",
+      framework: form.framework || "Node.js",
+      repoUrl: form.repoUrl,
+    }
 
     return
   }
@@ -213,15 +226,27 @@ async function refreshRepositories(showToast = true) {
 
 async function importProject() {
   if (!selectedRepo.value) return
+  const isManual = selectedRepo.value.provider === "manual"
+  const repoUrl = isManual ? form.repoUrl.trim() : selectedRepo.value.repoUrl
+
+  if (!repoUrl) {
+    toast.add({
+      title: "Git URL is required",
+      description: "Enter a repository HTTPS or SSH clone URL.",
+      color: "error",
+    })
+
+    return
+  }
 
   try {
     await api.post("/deployments/projects/import", {
-      repositoryId: selectedRepo.value.repositoryId,
+      ...form,
+      repositoryId: isManual ? repoUrl : selectedRepo.value.repositoryId,
       provider: selectedRepo.value.provider,
-      repoUrl: selectedRepo.value.repoUrl,
+      repoUrl,
       sshUrl: selectedRepo.value.sshUrl,
       htmlUrl: selectedRepo.value.htmlUrl,
-      ...form,
     })
 
     toast.add({

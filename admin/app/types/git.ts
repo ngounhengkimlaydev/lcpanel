@@ -13,7 +13,7 @@ export interface GitProvider {
 export interface GitRepository {
   id: number
   repositoryId: string
-  provider: Exclude<GitProviderKey, "manual">
+  provider: GitProviderKey
   name: string
   description: string
   branch: string
@@ -27,6 +27,7 @@ export interface GitRepository {
 
 export interface GitImportForm {
   projectName: string
+  repoUrl: string
   branch: string
   framework: string
   rootDirectory: string

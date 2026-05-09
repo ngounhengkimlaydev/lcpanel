@@ -73,7 +73,7 @@
 
                         <div class="flex flex-wrap gap-2 lg:justify-end">
                             <UButton icon="i-lucide-scroll-text" size="sm" color="neutral" variant="soft"
-                                to="/deploy/build-logs">
+                                to="/deployments/build-logs">
                                 Logs
                             </UButton>
 
@@ -158,50 +158,17 @@ const statusOptions = [
     { label: "Cancelled", value: "cancelled" },
 ]
 
-const history = ref<DeployHistory[]>([
-    {
-        id: 1,
-        project: "lcpanel-admin",
-        message: "Update deployment dashboard layout",
-        branch: "main",
-        commit: "a82f13c",
-        status: "success",
-        environment: "Production",
-        author: "Lay",
-        deployedAt: "2 minutes ago",
-        duration: "1m 24s",
-        version: "v1.0.12",
-        domain: "panel.ltech.digital",
-    },
-    {
-        id: 2,
-        project: "lcpanel-core",
-        message: "Add deployment API and build log service",
-        branch: "main",
-        commit: "f91b22a",
-        status: "running",
-        environment: "Production",
-        author: "Lay",
-        deployedAt: "Running now",
-        duration: "Running",
-        version: "v1.0.11",
-        domain: "api.ltech.digital",
-    },
-    {
-        id: 3,
-        project: "client-website",
-        message: "Fix homepage responsive issue",
-        branch: "production",
-        commit: "c34e901",
-        status: "failed",
-        environment: "Production",
-        author: "Developer",
-        deployedAt: "1 hour ago",
-        duration: "42s",
-        version: "v1.0.10",
-        domain: "client.com",
-    },
-])
+const api = useApiFetch()
+const toast = useToast()
+const history = ref<DeployHistory[]>([])
+
+onMounted(getHistory)
+
+async function getHistory() {
+    const res: any = await api.get('/deployments/history')
+
+    history.value = res.data || []
+}
 
 const filteredHistory = computed(() => {
     const keyword = search.value.toLowerCase().trim()
@@ -282,7 +249,7 @@ function getActions(item: DeployHistory) {
             {
                 label: "View Build Logs",
                 icon: "i-lucide-scroll-text",
-                to: "/deploy/build-logs",
+                to: "/deployments/build-logs",
             },
         ],
         [
@@ -290,6 +257,7 @@ function getActions(item: DeployHistory) {
                 label: "Redeploy",
                 icon: "i-lucide-rocket",
                 disabled: item.status === "running",
+                onSelect: () => redeploy(item),
             },
             {
                 label: "Copy Commit Hash",
@@ -297,5 +265,20 @@ function getActions(item: DeployHistory) {
             },
         ],
     ]
+}
+
+async function redeploy(item: DeployHistory) {
+    await api.post(`/deployments/projects/${item.id}/pull`, {
+        install: true,
+        build: true,
+        restart: true,
+    })
+
+    toast.add({
+        title: 'Redeploy started',
+        color: 'success',
+    })
+
+    await getHistory()
 }
 </script>

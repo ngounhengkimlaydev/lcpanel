@@ -17,6 +17,18 @@
     </div>
 
     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <UFormField
+        v-if="repo.provider === 'manual'"
+        label="Git URL"
+        class="md:col-span-2"
+      >
+        <UInput
+          v-model="form.repoUrl"
+          icon="i-lucide-git-branch"
+          placeholder="https://github.com/user/repository.git"
+        />
+      </UFormField>
+
       <UFormField label="Project Name">
         <UInput v-model="form.projectName" placeholder="my-project" />
       </UFormField>

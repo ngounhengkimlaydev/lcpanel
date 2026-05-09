@@ -28,7 +28,7 @@
           </div>
 
           <UIcon
-            :name="repo.provider === 'github' ? 'i-simple-icons-github' : 'i-simple-icons-gitlab'"
+            :name="providerIcon(repo.provider)"
             class="size-5 text-muted"
           />
         </div>
@@ -78,4 +78,11 @@ const searchModel = computed({
   get: () => props.search,
   set: (value) => emit("update:search", value),
 })
+
+function providerIcon(provider: GitRepository["provider"]) {
+  if (provider === "github") return "i-simple-icons-github"
+  if (provider === "gitlab") return "i-simple-icons-gitlab"
+
+  return "i-lucide-git-branch"
+}
 </script>

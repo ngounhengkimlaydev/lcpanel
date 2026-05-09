@@ -25,8 +25,38 @@ import { PullProjectDto } from "./dto/pull-project.dto";
 @Controller("deployments")
 export class DeploymentsController {
   static MODULE_KEY = "git_repo";
+  static DEPLOY_MODULE_KEY = "deploy";
+  static HISTORY_MODULE_KEY = "git_history";
+  static BUILD_LOGS_MODULE_KEY = "build_logs";
 
   constructor(private readonly deployment: DeployService) {}
+
+  @UseGuards(JwtAuthGuard, PermissionGuard)
+  @Get()
+  @Permission(DeploymentsController.DEPLOY_MODULE_KEY, PermissionAction.VIEW)
+  async getDeployments(@Req() req: any) {
+    const customerId = this.getCustomerId(req);
+
+    return this.deployment.getDeploymentOverview(customerId);
+  }
+
+  @UseGuards(JwtAuthGuard, PermissionGuard)
+  @Get("history")
+  @Permission(DeploymentsController.HISTORY_MODULE_KEY, PermissionAction.VIEW)
+  async getHistory(@Req() req: any) {
+    const customerId = this.getCustomerId(req);
+
+    return this.deployment.getDeploymentHistory(customerId);
+  }
+
+  @UseGuards(JwtAuthGuard, PermissionGuard)
+  @Get("build-logs")
+  @Permission(DeploymentsController.BUILD_LOGS_MODULE_KEY, PermissionAction.VIEW)
+  async getBuildLogs(@Req() req: any) {
+    const customerId = this.getCustomerId(req);
+
+    return this.deployment.getBuildLogs(customerId);
+  }
 
   @UseGuards(JwtAuthGuard, PermissionGuard)
   @Get("connections")
@@ -135,7 +165,7 @@ export class DeploymentsController {
 
   @UseGuards(JwtAuthGuard, PermissionGuard)
   @Post("projects/:id/pull")
-  @Permission(DeploymentsController.MODULE_KEY, PermissionAction.UPDATE)
+  @Permission(DeploymentsController.DEPLOY_MODULE_KEY, PermissionAction.UPDATE)
   async pullProject(
     @Req() req: any,
     @Param("id", ParseIntPipe) id: number,
@@ -148,7 +178,7 @@ export class DeploymentsController {
 
   @UseGuards(JwtAuthGuard, PermissionGuard)
   @Delete("projects/:id")
-  @Permission(DeploymentsController.MODULE_KEY, PermissionAction.DELETE)
+  @Permission(DeploymentsController.DEPLOY_MODULE_KEY, PermissionAction.DELETE)
   async deleteProject(@Req() req: any, @Param("id", ParseIntPipe) id: number) {
     const customerId = this.getCustomerId(req);
 

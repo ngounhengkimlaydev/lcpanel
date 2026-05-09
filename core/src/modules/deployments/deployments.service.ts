@@ -139,6 +139,66 @@ export class DeployService {
     return this.repository.getGitProjects(customerId);
   }
 
+  async getDeploymentOverview(customerId: number) {
+    const projects = await this.repository.getGitProjects(customerId);
+    const deployments = projects.map((project) =>
+      this.toDeploymentItem(project),
+    );
+
+    return {
+      data: deployments,
+      stats: [
+        {
+          label: "Total Projects",
+          value: String(deployments.length),
+          icon: "i-lucide-folder-git-2",
+        },
+        {
+          label: "Successful",
+          value: String(
+            deployments.filter((item) => item.status === "success").length,
+          ),
+          icon: "i-lucide-circle-check",
+        },
+        {
+          label: "Deploying",
+          value: String(
+            deployments.filter((item) => item.status === "deploying").length,
+          ),
+          icon: "i-lucide-loader",
+        },
+        {
+          label: "Failed",
+          value: String(
+            deployments.filter((item) => item.status === "failed").length,
+          ),
+          icon: "i-lucide-circle-x",
+        },
+      ],
+      total: deployments.length,
+    };
+  }
+
+  async getDeploymentHistory(customerId: number) {
+    const projects = await this.repository.getGitProjects(customerId);
+    const history = projects.map((project) => this.toHistoryItem(project));
+
+    return {
+      data: history,
+      total: history.length,
+    };
+  }
+
+  async getBuildLogs(customerId: number) {
+    const projects = await this.repository.getGitProjects(customerId);
+    const logs = projects.map((project) => this.toBuildLogItem(project));
+
+    return {
+      data: logs,
+      total: logs.length,
+    };
+  }
+
   async importProject(customerId: number, dto: ImportProjectDto) {
     const projectName = this.safeProjectName(dto.projectName);
     const branch = this.safeBranchName(dto.branch);
@@ -720,5 +780,136 @@ export class DeployService {
     if (value.includes("html")) return "Static HTML";
 
     return language;
+  }
+
+  private toDeploymentItem(project: any) {
+    const status = this.toDeployStatus(project.status);
+    const name = project.name || project.full_name || "Untitled project";
+    const branch = project.default_branch || "main";
+
+    return {
+      id: project.id,
+      name,
+      description: project.full_name || project.clone_url || "Imported Git project",
+      framework: this.detectFrameworkFromProject(project),
+      branch,
+      environment: "Production",
+      domain: project.html_url || "-",
+      commit: "-",
+      lastDeploy: project.last_pulled_at
+        ? project.last_pulled_at.toISOString()
+        : project.updated_at?.toISOString?.() || "-",
+      buildTime: status === "deploying" ? "Running" : "-",
+      status,
+      icon: this.getFrameworkIcon(this.detectFrameworkFromProject(project)),
+      provider: project.provider,
+      repoUrl: project.clone_url,
+      localPath: project.local_path,
+    };
+  }
+
+  private toHistoryItem(project: any) {
+    const status = this.toHistoryStatus(project.status);
+    const deployedAt = project.last_pulled_at || project.updated_at;
+
+    return {
+      id: project.id,
+      project: project.name || project.full_name || "Untitled project",
+      message: project.last_pulled_at
+        ? "Pulled latest source code"
+        : "Imported Git repository",
+      branch: project.default_branch || "main",
+      commit: "-",
+      status,
+      environment: "Production",
+      author: project.connection?.username || project.provider || "Manual",
+      deployedAt: deployedAt?.toISOString?.() || "-",
+      duration: status === "running" ? "Running" : "-",
+      version: `#${project.id}`,
+      domain: project.html_url || "-",
+    };
+  }
+
+  private toBuildLogItem(project: any) {
+    const status = this.toHistoryStatus(project.status);
+    const branch = project.default_branch || "main";
+    const projectName = project.name || project.full_name || "Untitled project";
+
+    return {
+      id: project.id,
+      project: projectName,
+      branch,
+      commit: "-",
+      status,
+      duration: status === "running" ? "Running" : "-",
+      createdAt: project.updated_at?.toISOString?.() || "-",
+      installTime: "-",
+      buildTime: status === "running" ? "Running" : "-",
+      deployTime: "-",
+      output: this.buildLogOutput(projectName, branch, project.status),
+    };
+  }
+
+  private toDeployStatus(status?: string) {
+    if (status === "failed") return "failed";
+    if (status === "deploying" || status === "running") return "deploying";
+    if (status === "imported" || status === "pulled") return "success";
+
+    return "pending";
+  }
+
+  private toHistoryStatus(status?: string) {
+    if (status === "failed") return "failed";
+    if (status === "deploying" || status === "running") return "running";
+    if (status === "cancelled") return "cancelled";
+    if (status === "imported" || status === "pulled") return "success";
+
+    return "cancelled";
+  }
+
+  private detectFrameworkFromProject(project: any) {
+    const name = `${project.name || ""} ${project.full_name || ""}`.toLowerCase();
+
+    if (name.includes("nuxt")) return "Nuxt";
+    if (name.includes("next")) return "Next.js";
+    if (name.includes("nest")) return "NestJS";
+    if (name.includes("laravel")) return "Laravel";
+    if (name.includes("vue")) return "Vue";
+    if (name.includes("react")) return "React";
+
+    return "Node.js";
+  }
+
+  private getFrameworkIcon(framework: string) {
+    const value = framework.toLowerCase();
+
+    if (value.includes("nuxt")) return "i-simple-icons-nuxtdotjs";
+    if (value.includes("next")) return "i-simple-icons-nextdotjs";
+    if (value.includes("nest")) return "i-simple-icons-nestjs";
+    if (value.includes("laravel")) return "i-simple-icons-laravel";
+    if (value.includes("vue")) return "i-simple-icons-vuedotjs";
+    if (value.includes("react")) return "i-simple-icons-react";
+
+    return "i-lucide-rocket";
+  }
+
+  private buildLogOutput(projectName: string, branch: string, status?: string) {
+    const lines = [
+      `$ git fetch origin ${branch}`,
+      `$ git checkout ${branch}`,
+      `$ git reset --hard origin/${branch}`,
+    ];
+
+    if (status === "pulled") {
+      lines.push("Source code pulled successfully.");
+    } else if (status === "imported") {
+      lines.push(`Project ${projectName} imported successfully.`);
+    } else if (status === "failed") {
+      lines.push("Deployment failed. Check server logs for the command error.");
+    } else {
+      lines.push("Waiting for deployment action.");
+    }
+
+    return lines.join("\n");
   }
 }
