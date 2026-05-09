@@ -18,6 +18,7 @@ import { PermissionModule } from './modules/permission/permission.module';
 import { Reflector } from '@nestjs/core';
 import { ServerModule } from './modules/server/server.module';
 import { ServicesModule } from './modules/services/services.module';
+import { DeploymentsModule } from './modules/deployments/deployments.module';
 
 // UsersModule
 @Module({
@@ -41,7 +42,8 @@ import { ServicesModule } from './modules/services/services.module';
         UserLogModule,
         PermissionModule,
         ServerModule,
-        ServicesModule
+        ServicesModule,
+        DeploymentsModule
     ],
     controllers: [AppController],
     providers: [AppService, Reflector],

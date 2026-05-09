@@ -106,6 +106,8 @@ model Customer {
   created_at      DateTime         @default(now())
   updated_at      DateTime         @updatedAt
   customerDevices CustomerDevice[]
+  gitConnections  GitConnection[]
+  gitProjects     GitProject[]
 
   @@map("customer")
 }
@@ -162,4 +164,53 @@ model UserLog {
   @@index([causer_type, causer_id], map: "causer")
   @@index([log_name], map: "activity_log_log_name_index")
   @@map("user_log")
+}
+
+model GitConnection {
+  id               Int       @id @default(autoincrement())
+  customer_id      Int
+  provider         String
+  provider_user_id String
+  username         String?
+  avatar_url       String?
+  access_token     String
+  refresh_token    String?
+  scope            String?
+  expires_at       DateTime?
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
+
+  projects   GitProject[]
+  customer   Customer     @relation(fields: [customer_id], references: [id])
+  customerId Int?
+
+  @@unique([customer_id, provider])
+  @@index([customer_id])
+  @@map("git_connection")
+}
+
+model GitProject {
+  id               Int       @id @default(autoincrement())
+  customer_id      Int
+  connection_id    Int?
+  provider         String
+  provider_repo_id String
+  name             String
+  full_name        String
+  clone_url        String
+  ssh_url          String?
+  html_url         String?
+  default_branch   String?
+  local_path       String?
+  status           String    @default("imported")
+  last_pulled_at   DateTime?
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
+
+  connection GitConnection? @relation(fields: [connection_id], references: [id])
+  customer   Customer       @relation(fields: [customer_id], references: [id])
+
+  @@unique([customer_id, provider, provider_repo_id])
+  @@index([customer_id, connection_id])
+  @@map("git_project")
 }
