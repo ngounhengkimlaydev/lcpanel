@@ -157,7 +157,7 @@
                                 </UButton>
 
                                 <UButton icon="i-lucide-scroll-text" color="neutral" variant="soft" block
-                                    to="/deployments/build-logs">
+                                    :to="{ path: '/deployments/build-logs', query: { project: String(project.id) } }">
                                     View Build Logs
                                 </UButton>
 

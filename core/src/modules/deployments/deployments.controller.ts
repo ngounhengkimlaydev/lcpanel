@@ -51,7 +51,10 @@ export class DeploymentsController {
 
   @UseGuards(JwtAuthGuard, PermissionGuard)
   @Get("build-logs")
-  @Permission(DeploymentsController.BUILD_LOGS_MODULE_KEY, PermissionAction.VIEW)
+  @Permission(
+    DeploymentsController.BUILD_LOGS_MODULE_KEY,
+    PermissionAction.VIEW,
+  )
   async getBuildLogs(@Req() req: any) {
     const customerId = this.getCustomerId(req);
 
@@ -186,10 +189,7 @@ export class DeploymentsController {
   }
 
   private getCustomerId(req: any) {
-    const customerId = 1;
-    // req.customer?.id ||
-    // req.user?.company_id ||
-    // process.env.LCPANEL_GIT_CUSTOMER_ID;
+    const customerId = req.user.id;
 
     if (!customerId) {
       throw new BadRequestException(

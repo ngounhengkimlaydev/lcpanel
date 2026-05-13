@@ -94,7 +94,7 @@
                             </UButton>
 
                             <UButton icon="i-lucide-scroll-text" size="sm" color="neutral" variant="soft"
-                                to="/deployments/build-logs">
+                                :to="{ path: '/deployments/build-logs', query: { project: String(app.id) } }">
                                 Logs
                             </UButton>
 
@@ -145,7 +145,7 @@
             @rollback="rollbackProject" />
 
         <DeploymentSettingsModal v-model:open="settingOpen" :project="selectedProject" @submit="updateProjectSettings"
-            @delete="deleteProject" />
+            @delete="(project) => deleteProject(project as Deployment)" />
     </div>
 </template>
 
@@ -298,7 +298,10 @@ async function deployProject(project: Deployment) {
         color: 'success',
     })
 
-    await getDeployments()
+    await navigateTo({
+        path: '/deployments/build-logs',
+        query: { project: String(project.id) },
+    })
 }
 
 function rollbackProject(project: Deployment) {

@@ -39,10 +39,7 @@ export class AuthService {
 
     const user = await this.prisma.user.findFirst({
       where: {
-        OR: [
-          { username: dto.username },
-          { email: dto.username },
-        ],
+        OR: [{ username: dto.username }, { email: dto.username }],
       },
       include: {
         role: {
@@ -58,7 +55,10 @@ export class AuthService {
     });
 
     if (user) {
-      const isMatch = await this.hashService.compare(dto.password, user.password);
+      const isMatch = await this.hashService.compare(
+        dto.password,
+        user.password,
+      );
 
       if (!isMatch) {
         throw new UnauthorizedException("Invalid credentials");
@@ -83,10 +83,7 @@ export class AuthService {
 
     const customer = await this.prisma.customer.findFirst({
       where: {
-        OR: [
-          { email: dto.username },
-          { phone: dto.username },
-        ],
+        OR: [{ email: dto.username }, { phone: dto.username }],
         deleted_at: null,
       },
     });
@@ -95,7 +92,10 @@ export class AuthService {
       throw new UnauthorizedException("Invalid credentials");
     }
 
-    const customerPasswordMatches = await this.hashService.compare(dto.password, customer.password);
+    const customerPasswordMatches = await this.hashService.compare(
+      dto.password,
+      customer.password,
+    );
 
     if (!customerPasswordMatches) {
       throw new UnauthorizedException("Invalid credentials");
@@ -125,10 +125,15 @@ export class AuthService {
         name: dto.name || decoded.name || email.split("@")[0],
         image: decoded.picture,
         phone: dto.phone,
-        google: decoded.firebase?.sign_in_provider === "google.com" ? decoded.uid : undefined,
+        google:
+          decoded.firebase?.sign_in_provider === "google.com"
+            ? decoded.uid
+            : undefined,
       });
 
-      const token = await this.jwtService.signAsync(this.createCustomerPayload(customer));
+      const token = await this.jwtService.signAsync(
+        this.createCustomerPayload(customer),
+      );
       return this.getCustomerResponseData(customer.id, token);
     }
 
@@ -157,17 +162,16 @@ export class AuthService {
       },
     });
 
-    const token = await this.jwtService.signAsync(this.createCustomerPayload(customer));
+    const token = await this.jwtService.signAsync(
+      this.createCustomerPayload(customer),
+    );
     return this.getCustomerResponseData(customer.id, token);
   }
 
   async forgotPassword(dto: ForgotPasswordDTO) {
     const user = await this.prisma.user.findFirst({
       where: {
-        OR: [
-          { email: dto.email },
-          { username: dto.email },
-        ],
+        OR: [{ email: dto.email }, { username: dto.email }],
       },
     });
 
@@ -197,7 +201,11 @@ export class AuthService {
     }
   }
 
-  async getResponseData(userId: number, token?: string, authType: "user" | "customer" = "user") {
+  async getResponseData(
+    userId: number,
+    token?: string,
+    authType: "user" | "customer" = "user",
+  ) {
     if (authType === "customer") {
       return this.getCustomerResponseData(userId, token);
     }
@@ -269,14 +277,19 @@ export class AuthService {
       email: decoded.email,
       name: decoded.name || decoded.email.split("@")[0],
       image: decoded.picture,
-      google: decoded.firebase?.sign_in_provider === "google.com" ? decoded.uid : undefined,
+      google:
+        decoded.firebase?.sign_in_provider === "google.com"
+          ? decoded.uid
+          : undefined,
     });
 
     if (!customer.status) {
       throw new UnauthorizedException("Customer is inactive");
     }
 
-    const token = await this.jwtService.signAsync(this.createCustomerPayload(customer));
+    const token = await this.jwtService.signAsync(
+      this.createCustomerPayload(customer),
+    );
     return this.getCustomerResponseData(customer.id, token);
   }
 
@@ -290,10 +303,7 @@ export class AuthService {
   }) {
     const customer = await this.prisma.customer.findFirst({
       where: {
-        OR: [
-          { firebase_uid: data.firebaseUid },
-          { email: data.email },
-        ],
+        OR: [{ firebase_uid: data.firebaseUid }, { email: data.email }],
         deleted_at: null,
       },
     });
@@ -327,13 +337,13 @@ export class AuthService {
   }
 
   private createCustomerPayload(customer: {
-    id: number;
+    id: bigint;
     name: string;
     email: string | null;
     firebase_uid: string | null;
   }) {
     return {
-      id: customer.id,
+      id: customer.id.toString(),
       auth_type: "customer",
       username: customer.email ?? customer.name,
       email: customer.email,
@@ -342,7 +352,10 @@ export class AuthService {
     };
   }
 
-  private async getCustomerResponseData(customerId: number, token?: string) {
+  private async getCustomerResponseData(
+    customerId: bigint | number,
+    token?: string,
+  ) {
     const customer = await this.prisma.customer.findUnique({
       where: { id: customerId },
     });
@@ -350,9 +363,31 @@ export class AuthService {
     if (!customer || customer.deleted_at) {
       throw new NotFoundException("Customer not found");
     }
+    // const roles = await this.prisma.role.findMany({
+    //   select: {
+    //     id: true,
+    //     user_type_id: true,
+    //     role_name: true,
+    //   },
+    //   where: {
+    //     user_type: {
+    //       level: {
+    //         lte: user.user_type.level,
+    //       },
+    //     },
+    //   },
+    //   orderBy: {
+    //     user_type: {
+    //       level: "desc",
+    //     },
+    //   },
+    // });
 
+    const roleModule = await this.roleService.getRoleModuleLists(
+      customer.role_id,
+    );
     const customerDTO = {
-      id: customer.id,
+      id: customer.id.toString(),
       full_name: customer.name,
       name: customer.name,
       username: customer.email,
@@ -370,7 +405,7 @@ export class AuthService {
       user: customerDTO,
       customer: customerDTO,
       user_type: [],
-      roleModule: [],
+      roleModule,
       roles: [],
       permissions: [],
       ...(token && { token, token_type: "bearer" }),

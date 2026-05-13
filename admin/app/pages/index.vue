@@ -219,10 +219,10 @@
 </template>
 
 <script setup lang="ts">
-definePageMeta({
-  middleware: "alc",
-  moduleKey: moduleKey.DASHBOARD,
-})
+// definePageMeta({
+//   middleware: "alc",
+//   moduleKey: moduleKey.DASHBOARD,
+// })
 
 const fetch = useApiFetch()
 const { $socket } = useNuxtApp();

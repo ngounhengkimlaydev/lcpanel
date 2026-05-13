@@ -1,7 +1,9 @@
 import { Injectable, Logger, ServiceUnavailableException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { existsSync, readFileSync, readdirSync } from "fs";
 import { App, cert, getApps, initializeApp, ServiceAccount } from "firebase-admin/app";
 import { Auth, DecodedIdToken, getAuth } from "firebase-admin/auth";
+import { join, resolve } from "path";
 
 @Injectable()
 export class FirebaseService {
@@ -42,6 +44,7 @@ export class FirebaseService {
     }
 
     const serviceAccountJson = this.config.get<string>("FIREBASE_SERVICE_ACCOUNT");
+    const serviceAccountPath = this.resolveServiceAccountPath();
     const projectId = this.config.get<string>("FIREBASE_PROJECT_ID");
     const clientEmail = this.config.get<string>("FIREBASE_CLIENT_EMAIL");
     const privateKey = this.config.get<string>("FIREBASE_PRIVATE_KEY")?.replace(/\\n/g, "\n");
@@ -49,6 +52,14 @@ export class FirebaseService {
     try {
       if (serviceAccountJson) {
         const parsed = JSON.parse(serviceAccountJson) as ServiceAccount;
+
+        return initializeApp({
+          credential: cert(parsed),
+        });
+      }
+
+      if (serviceAccountPath) {
+        const parsed = this.readServiceAccountFile(serviceAccountPath);
 
         return initializeApp({
           credential: cert(parsed),
@@ -72,7 +83,51 @@ export class FirebaseService {
       throw error;
     }
 
-    this.logger.warn("Firebase Admin is not configured. Set FIREBASE_SERVICE_ACCOUNT or FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL and FIREBASE_PRIVATE_KEY.");
+    this.logger.warn("Firebase Admin is not configured. Set FIREBASE_SERVICE_ACCOUNT, FIREBASE_SERVICE_ACCOUNT_PATH, GOOGLE_APPLICATION_CREDENTIALS, or FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL and FIREBASE_PRIVATE_KEY.");
+    return null;
+  }
+
+  private readServiceAccountFile(serviceAccountPath: string): ServiceAccount {
+    const resolvedPath = resolve(serviceAccountPath);
+    const raw = readFileSync(resolvedPath, "utf8");
+
+    return JSON.parse(raw) as ServiceAccount;
+  }
+
+  private resolveServiceAccountPath(): string | null {
+    const configuredPath =
+      this.config.get<string>("FIREBASE_SERVICE_ACCOUNT_PATH")
+      || this.config.get<string>("GOOGLE_APPLICATION_CREDENTIALS");
+
+    if (configuredPath) {
+      return resolve(process.cwd(), configuredPath);
+    }
+
+    return this.findLocalServiceAccountPath();
+  }
+
+  private findLocalServiceAccountPath(): string | null {
+    const searchDirectories = [
+      join(process.cwd(), "src", "common"),
+      join(process.cwd(), "dist", "common"),
+      join(__dirname, ".."),
+    ];
+
+    for (const directory of searchDirectories) {
+      if (!existsSync(directory)) {
+        continue;
+      }
+
+      const match = readdirSync(directory).find((fileName) => (
+        fileName.endsWith(".json")
+        && fileName.includes("firebase-adminsdk")
+      ));
+
+      if (match) {
+        return join(directory, match);
+      }
+    }
+
     return null;
   }
 }

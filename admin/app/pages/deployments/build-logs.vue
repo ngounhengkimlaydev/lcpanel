@@ -31,7 +31,7 @@
                     <button v-for="log in filteredLogs" :key="log.id" type="button"
                         class="w-full rounded-xl border border-default p-4 text-left transition hover:bg-muted"
                         :class="selectedLog?.id === log.id ? 'bg-primary/10 ring-2 ring-primary' : ''"
-                        @click="selectedLog = log">
+                        @click="selectLogEntry(log)">
                         <div class="flex items-start justify-between gap-3">
                             <div>
                                 <p class="font-medium text-highlighted">{{ log.project }}</p>
@@ -79,7 +79,7 @@
 
                                 <div class="flex gap-2">
                                     <UButton icon="i-lucide-refresh-cw" color="neutral" variant="soft" size="sm"
-                                        @click="getLogs">
+                                        @click="() => getLogs()">
                                         Refresh
                                     </UButton>
 
@@ -147,6 +147,7 @@ interface BuildLog {
 
 const search = ref("")
 const status = ref("all")
+const route = useRoute()
 
 const statusOptions = [
     { label: "All Status", value: "all" },
@@ -159,21 +160,31 @@ const statusOptions = [
 const api = useApiFetch()
 const logs = ref<BuildLog[]>([])
 const selectedLog = ref<BuildLog | null>(null)
+let refreshTimer: ReturnType<typeof setInterval> | null = null
 
-onMounted(getLogs)
+onMounted(async () => {
+    await getLogs()
+    syncPolling()
+})
 
-async function getLogs() {
-    const res: any = await api.get('/deployments/build-logs')
+onBeforeUnmount(() => {
+    if (refreshTimer) {
+        clearInterval(refreshTimer)
+    }
+})
+
+async function getLogs(silent = false) {
+    const res: any = await api.get('/deployments/build-logs', undefined, !silent)
     const data: BuildLog[] = res.data || []
 
     logs.value = data
-
-    const selectedLogExists = data.some((log) => log.id === selectedLog.value?.id)
-
-    if (!selectedLog.value || !selectedLogExists) {
-        selectedLog.value = data[0] || null
-    }
+    selectLog(data)
+    syncPolling()
 }
+
+watch(() => route.query.project, () => {
+    selectLog(logs.value)
+})
 
 const filteredLogs = computed(() => {
     const keyword = search.value.toLowerCase().trim()
@@ -191,6 +202,59 @@ const filteredLogs = computed(() => {
         return matchSearch && matchStatus
     })
 })
+
+function selectLog(data: BuildLog[]) {
+    const projectId = Number(route.query.project)
+    const projectLog = Number.isFinite(projectId)
+        ? data.find((log) => log.id === projectId)
+        : null
+
+    if (projectLog) {
+        selectedLog.value = projectLog
+        return
+    }
+
+    const selectedLogExists = data.some((log) => log.id === selectedLog.value?.id)
+
+    if (!selectedLog.value || !selectedLogExists) {
+        selectedLog.value = data[0] || null
+    }
+}
+
+function selectLogEntry(log: BuildLog) {
+    selectedLog.value = log
+
+    void navigateTo({
+        path: route.path,
+        query: {
+            ...route.query,
+            project: String(log.id),
+        },
+    }, {
+        replace: true,
+    })
+}
+
+function syncPolling() {
+    const hasRunningLogs = logs.value.some((log) => log.status === "running")
+
+    if (!hasRunningLogs) {
+        if (refreshTimer) {
+            clearInterval(refreshTimer)
+            refreshTimer = null
+        }
+
+        return
+    }
+
+    if (refreshTimer) {
+        return
+    }
+
+    refreshTimer = setInterval(() => {
+        void getLogs(true)
+    }, 2500)
+}
 
 function getStatusColor(status: BuildStatus) {
     switch (status) {

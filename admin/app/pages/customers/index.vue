@@ -10,7 +10,7 @@
               </h3>
               <div class="flex space-x-2">
                 <UButton icon="i-lucide-dices" label="View Customer Dashboard" @click="dashboard = true" />
-                <UButton icon="i-lucide-user-plus" label="Add Customer" @click="openCreateModal" />
+                <UButton icon="i-lucide-user-plus" label="Add Customer" @click="openCreateModal"/>
               </div>
             </div>
           </template>

@@ -240,7 +240,7 @@ async function importProject() {
   }
 
   try {
-    await api.post("/deployments/projects/import", {
+    const res: any = await api.post("/deployments/projects/import", {
       ...form,
       repositoryId: isManual ? repoUrl : selectedRepo.value.repositoryId,
       provider: selectedRepo.value.provider,
@@ -249,13 +249,18 @@ async function importProject() {
       htmlUrl: selectedRepo.value.htmlUrl,
     })
 
+    const projectId = res?.data?.id
+
     toast.add({
-      title: "Project imported",
-      description: "LCPANEL can now pull and deploy this project.",
+      title: "Project import started",
+      description: "Redirecting to build logs so you can watch the deployment.",
       color: "success",
     })
 
-    await refreshRepositories(false)
+    await navigateTo({
+      path: "/deployments/build-logs",
+      query: projectId ? { project: String(projectId) } : undefined,
+    })
   } catch {
     toast.add({
       title: "Import failed",

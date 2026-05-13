@@ -31,12 +31,13 @@ model Permission {
 }
 
 model UserType {
-  id         Int      @id @default(autoincrement())
+  id         Int        @id @default(autoincrement())
   type       String
   level      Int
-  created_at DateTime @default(now())
+  created_at DateTime   @default(now())
   roles      Role[]
   users      User[]
+  customers  Customer[]
 
   @@map("user_type")
 }
@@ -61,6 +62,7 @@ model Role {
   user_type    UserType     @relation(fields: [user_type_id], references: [id])
   roleModules  RoleModule[]
   Users        User[]
+  customers    Customer[]
 
   @@index([user_type_id], map: "idx_role_user_type_id_fkey")
   @@map("role")
@@ -90,24 +92,32 @@ model User {
 }
 
 model Customer {
-  id              Int              @id @default(autoincrement())
-  code            String?
-  image           String?
-  name            String
-  phone           String
-  email           String?
-  gender          Int?
-  password        String?
-  google          String?
-  apple_id        String?
-  firebase_uid    String?
-  status          Int             @default(1)
-  deleted_at      DateTime?
-  created_at      DateTime         @default(now())
-  updated_at      DateTime         @updatedAt
-  gitConnections  GitConnection[]
-  gitProjects     GitProject[]
+  id             BigInt          @id @default(autoincrement())
+  user_type_id   Int             @default(6)
+  role_id        Int             @default(2)
+  code           String?
+  image          String?
+  name           String
+  phone          String
+  email          String?
+  gender         Int?
+  password       String?
+  google         String?
+  apple_id       String?
+  firebase_uid   String?
+  status         Int             @default(1) //1 Active, 2 Suspended
+  deleted_at     DateTime?
+  created_at     DateTime        @default(now())
+  updated_at     DateTime        @updatedAt
+  user_type      UserType        @relation(fields: [user_type_id], references: [id])
+  role           Role            @relation(fields: [role_id], references: [id])
+  gitConnections GitConnection[]
+  gitProjects    GitProject[]
+  invoices       Invoices[]
+  subscription   Subscriptions?
 
+  @@unique([phone, email])
+  @@index([user_type_id, role_id])
   @@map("customer")
 }
 
@@ -150,7 +160,7 @@ model UserLog {
 
 model GitConnection {
   id               Int       @id @default(autoincrement())
-  customer_id      Int
+  customer_id      BigInt
   provider         String
   provider_user_id String
   username         String?
@@ -173,7 +183,7 @@ model GitConnection {
 
 model GitProject {
   id               Int       @id @default(autoincrement())
-  customer_id      Int
+  customer_id      BigInt
   connection_id    Int?
   provider         String
   provider_repo_id String
@@ -195,4 +205,59 @@ model GitProject {
   @@unique([customer_id, provider, provider_repo_id])
   @@index([customer_id, connection_id])
   @@map("git_project")
+}
+
+model Plans {
+  id            Int             @id @default(autoincrement())
+  name          String          @db.VarChar(50)
+  description   String
+  price         Float           @db.DoublePrecision
+  cpu           Float?          @db.DoublePrecision
+  ram           Int?
+  disk_space    Int
+  domain        Int
+  email         Int?
+  ssl           Boolean         @default(true)
+  database      Int
+  bandwidth     Float           @db.DoublePrecision
+  type          Int             @db.SmallInt //1 Web Hosting, 2 VPS Hosting, 3 DB Hosting, 4 Cloud Hosting
+  status        Int             @default(1) //1 Active, 2 Disable
+  created_at    DateTime        @default(now())
+  updated_at    DateTime        @updatedAt
+  subscriptions Subscriptions[]
+
+  @@map("plans")
+}
+
+model Subscriptions {
+  id          Int        @id @default(autoincrement())
+  customer_id BigInt     @unique
+  customer    Customer   @relation(fields: [customer_id], references: [id])
+  plan_id     Int
+  plan        Plans      @relation(fields: [plan_id], references: [id])
+  start_date  DateTime
+  end_date    DateTime
+  status      Int        @default(1) //1 Active, 2 Disable
+  created_at  DateTime   @default(now())
+  updated_at  DateTime   @updatedAt
+  invoices    Invoices[]
+
+  @@index([customer_id, plan_id])
+  @@map("subscriptions")
+}
+
+model Invoices {
+  id              Int           @id @default(autoincrement())
+  code            String        @unique @db.VarChar(50)
+  customer_id     BigInt
+  customers       Customer      @relation(fields: [customer_id], references: [id])
+  subscription_id Int
+  subscription    Subscriptions @relation(fields: [subscription_id], references: [id])
+  status          Int           @default(1) //1 Paid, 2 Unpaid, 3 Overdue
+  due_date        DateTime
+  created_at      DateTime      @default(now())
+  updated_at      DateTime      @updatedAt
+
+  @@index([customer_id])
+  @@map("invoices")
 }

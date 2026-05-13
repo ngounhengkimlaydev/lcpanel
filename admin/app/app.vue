@@ -26,17 +26,47 @@ useSeoMeta({
 const { locale } = useI18n()
 
 const fontClass = computed(() => `font-${locale.value}`)
+
+const showLoadingSkeleton = ref(false)
+let loadingTimer: ReturnType<typeof setTimeout> | null = null
+
+watch(isLoading, (loading) => {
+  if (loading) {
+    if (loadingTimer) {
+      return
+    }
+
+    loadingTimer = setTimeout(() => {
+      showLoadingSkeleton.value = true
+      loadingTimer = null
+    }, 140)
+
+    return
+  }
+
+  if (loadingTimer) {
+    clearTimeout(loadingTimer)
+    loadingTimer = null
+  }
+
+  showLoadingSkeleton.value = false
+}, { immediate: true })
+
 onMounted(async () => {
   await useUserStore().initStore()
+})
+
+onBeforeUnmount(() => {
+  if (loadingTimer) {
+    clearTimeout(loadingTimer)
+  }
 })
 </script>
 
 <template>
   <UApp :toaster="{ position: 'top-right' }" :class="fontClass">
     <NuxtLoadingIndicator />
-    <div v-if="isLoading" class="fixed inset-0 z-9999 flex items-center justify-center bg-black/20">
-      <UIcon name="i-lucide-loader-circle" class="size-10 animate-spin text-primary" />
-    </div>
+    <AppLoadingSkeleton v-if="showLoadingSkeleton" />
     <NuxtLayout>
       <NuxtPage />
     </NuxtLayout>
