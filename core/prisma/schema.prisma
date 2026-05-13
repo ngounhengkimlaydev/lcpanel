@@ -101,32 +101,14 @@ model Customer {
   google          String?
   apple_id        String?
   firebase_uid    String?
-  status          Int
+  status          Int             @default(1)
   deleted_at      DateTime?
   created_at      DateTime         @default(now())
   updated_at      DateTime         @updatedAt
-  customerDevices CustomerDevice[]
   gitConnections  GitConnection[]
   gitProjects     GitProject[]
 
   @@map("customer")
-}
-
-model CustomerDevice {
-  id          Int       @id @default(autoincrement())
-  customer_id Int
-  device_id   String
-  expires_at  DateTime?
-  revoked_at  DateTime?
-  fcm_token   String
-  is_login    Int?
-  created_at  DateTime  @default(now())
-  updated_at  DateTime  @updatedAt
-  status      Int?
-  customer    Customer  @relation(fields: [customer_id], references: [id])
-
-  @@index([customer_id])
-  @@map("customer_device")
 }
 
 model RoleModule {

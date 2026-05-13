@@ -76,6 +76,9 @@ export type UserData = {
   id?: number;
   full_name?: string;
   username?: string;
+  email?: string | null;
+  image?: string | null;
+  account_type?: "user" | "customer";
   roles?: string[];
   role_key?: string;
   user_role?: string;

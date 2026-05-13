@@ -139,6 +139,49 @@ export const useUserStore = defineStore("user", () => {
     return res;
   };
 
+  const loginWithFirebase = async (idToken: string) => {
+    const res: any = await api.post("/auth/login", {
+      provider: "firebase",
+      idToken,
+    });
+
+    setData({
+      token: res.access_token || res.token || null,
+      user: res.user || res.customer || null,
+      roles: res.roles || res.user?.roles || [],
+      permissions: res.permissions || res.user?.permissions || [],
+      roleModule: res.roleModule || res.role_module || [],
+      userTypes: res.user_type || [],
+    });
+
+    return res;
+  };
+
+  const registerCustomer = async (form: {
+    name: string;
+    email: string;
+    phone?: string;
+    password?: string;
+    idToken?: string;
+  }) => {
+    const res: any = await api.post("/auth/register", form);
+
+    setData({
+      token: res.access_token || res.token || null,
+      user: res.user || res.customer || null,
+      roles: res.roles || [],
+      permissions: res.permissions || [],
+      roleModule: res.roleModule || res.role_module || [],
+      userTypes: res.user_type || [],
+    });
+
+    return res;
+  };
+
+  const requestPasswordReset = async (email: string) => {
+    return api.post("/auth/forgot-password", { email });
+  };
+
   const logout = () => {
     setData({
       token: null,
@@ -189,6 +232,9 @@ export const useUserStore = defineStore("user", () => {
     setData,
     initStore,
     login,
+    loginWithFirebase,
+    registerCustomer,
+    requestPasswordReset,
     logout,
     hasRole,
     hasPermission,

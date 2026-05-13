@@ -1,9 +1,19 @@
-import { IsString } from "class-validator";
+import { IsOptional, IsString } from "class-validator";
 
 export class LoginDTO {
+    @IsOptional()
     @IsString()
-    username!: string;
+    username?: string;
 
+    @IsOptional()
     @IsString()
-    password!: string;
+    password?: string;
+
+    @IsOptional()
+    @IsString()
+    provider?: "firebase" | "google";
+
+    @IsOptional()
+    @IsString()
+    idToken?: string;
 }

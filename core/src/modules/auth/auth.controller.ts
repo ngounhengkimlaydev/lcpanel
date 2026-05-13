@@ -1,6 +1,8 @@
 import { AuthService } from "./auth.service";
 import { Body, Controller, Logger, Post, UseGuards } from "@nestjs/common";
 import { LoginDTO } from "./dto/login.dto";
+import { RegisterDTO } from "./dto/register.dto";
+import { ForgotPasswordDTO } from "./dto/forgot-password.dto";
 import { GetUser } from "./decorators/get-user.decorator";
 import { JwtAuthGuard } from "./jwt-auth.guard";
 
@@ -15,6 +17,16 @@ export class AuthController {
     return this.authService.login(dto);
   }
 
+  @Post("register")
+  register(@Body() dto: RegisterDTO) {
+    return this.authService.register(dto);
+  }
+
+  @Post("forgot-password")
+  forgotPassword(@Body() dto: ForgotPasswordDTO) {
+    return this.authService.forgotPassword(dto);
+  }
+
   @Post("logout")
   logout() {
     return this.authService.logout();
@@ -22,7 +34,7 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Post("me")
-  fetchData(@GetUser("id") userId: number) {
-    return this.authService.getResponseData(userId);
+  fetchData(@GetUser() user: { id: number; auth_type?: "user" | "customer" }) {
+    return this.authService.getResponseData(user.id, undefined, user.auth_type);
   }
 }

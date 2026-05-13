@@ -61,6 +61,19 @@
             </p>
           </div>
 
+          <button type="button" :disabled="googleLoading || loading"
+            class="mb-6 flex w-full items-center justify-center gap-3 rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/15 disabled:opacity-60"
+            @click="handleGoogleLogin">
+            <Icon name="i-simple-icons-google" class="text-lg" />
+            {{ googleLoading ? 'Connecting Google...' : 'Continue with Google' }}
+          </button>
+
+          <div class="mb-6 flex items-center gap-3">
+            <span class="h-px flex-1 bg-white/10"></span>
+            <span class="text-xs uppercase tracking-wider text-slate-500">or use password</span>
+            <span class="h-px flex-1 bg-white/10"></span>
+          </div>
+
           <form class="space-y-5" @submit.prevent="handleLogin">
             <div>
               <label class="mb-2 block text-sm font-medium text-slate-300">Username or Email</label>
@@ -87,7 +100,7 @@
                 Remember me
               </label>
 
-              <NuxtLink to="/forgot-password" class="text-sm text-cyan-300 hover:text-cyan-200">
+              <NuxtLink to="/auth/forgot-password" class="text-sm text-cyan-300 hover:text-cyan-200">
                 Forgot password?
               </NuxtLink>
             </div>
@@ -97,6 +110,13 @@
               {{ loading ? 'Authenticating...' : 'Login to Panel' }}
             </button>
           </form>
+
+          <p class="mt-6 text-center text-sm text-slate-400">
+            Need customer access?
+            <NuxtLink to="/auth/register" class="font-semibold text-cyan-300 hover:text-cyan-200">
+              Create an account
+            </NuxtLink>
+          </p>
 
           <p class="mt-8 text-center text-xs text-slate-500">
             © 2026 LTech Server Panel. Secure access only.
@@ -109,11 +129,11 @@
 <script lang="ts" setup>
 import { ref, reactive } from 'vue'
 const userStore = useUserStore()
+const firebaseAuth = useFirebaseAuth()
 
 definePageMeta({
   layout: 'auth'
 })
-const api = useApiFetch()
 const form = reactive({
   username: '',
   password: ''
@@ -122,9 +142,12 @@ const form = reactive({
 const showPwd = ref(false)
 const rememberMe = ref(false)
 const loading = ref(false)
+const googleLoading = ref(false)
 
 const handleLogin = async () => {
-  if (!form.username || !form.password) {
+  const username = form.username.trim()
+
+  if (!username || !form.password) {
     alert('Please enter email and password')
     return
   }
@@ -132,12 +155,33 @@ const handleLogin = async () => {
   loading.value = true
 
   try {
-    await userStore.login(form)
+    if (username.includes('@')) {
+      try {
+        const idToken = await firebaseAuth.signInWithEmail(username, form.password)
+        await userStore.loginWithFirebase(idToken)
+        await navigateTo('/')
+        return
+      } catch {
+        // Fall back to the API so admin accounts that use an email username still work.
+      }
+    }
+
+    await userStore.login({ username, password: form.password })
     await navigateTo('/')
-  } catch (err: any) {
-    // alert(err?.data?.message || 'Login failed')
   } finally {
     loading.value = false
+  }
+}
+
+const handleGoogleLogin = async () => {
+  googleLoading.value = true
+
+  try {
+    const idToken = await firebaseAuth.signInWithGoogle()
+    await userStore.loginWithFirebase(idToken)
+    await navigateTo('/')
+  } finally {
+    googleLoading.value = false
   }
 }
 </script>

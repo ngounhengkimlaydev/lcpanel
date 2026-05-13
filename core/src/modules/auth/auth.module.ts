@@ -9,6 +9,7 @@ import { RoleModule } from "../role/role.module";
 import { JwtStrategy } from "./jwt.strategy";
 import { PassportModule } from "@nestjs/passport";
 import { ConfigModule, ConfigService } from "@nestjs/config";
+import { FirebaseModule } from "../../common/module/firebase.module";
 @Module({
   imports: [
     PassportModule.register({ defaultStrategy: "jwt" }),
@@ -23,6 +24,7 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
     HashModule,
     UserTypeModule,
     RoleModule,
+    FirebaseModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, PrismaService, JwtStrategy],
