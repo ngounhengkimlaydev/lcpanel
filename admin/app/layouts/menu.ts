@@ -151,21 +151,21 @@ export const useMenu = () => {
             to: "/deployments",
             module_key: moduleKey.DEPLOY,
           },
-          {
-            label: "Git Repositories",
-            to: "/deployments/git",
-            module_key: moduleKey.GIT_REPO,
-          },
+          // {
+          //   label: "Git Repositories",
+          //   to: "/deployments/git",
+          //   module_key: moduleKey.GIT_REPO,
+          // },
           {
             label: "Deploy History",
             to: "/deployments/history",
             module_key: moduleKey.GIT_HISTORY,
           },
-          {
-            label: "Build Logs",
-            to: "/deployments/build-logs",
-            module_key: moduleKey.BUILD_LOGS,
-          },
+          // {
+          //   label: "Build Logs",
+          //   to: "/deployments/build-logs",
+          //   module_key: moduleKey.BUILD_LOGS,
+          // },
           {
             label: "SSH Deploy Keys",
             to: "/deployments/ssh-keys",

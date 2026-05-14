@@ -56,6 +56,12 @@
           Try another search keyword.
         </p>
       </div>
+
+      <div
+        v-if="hasMore"
+        ref="loadMoreTrigger"
+        class="h-1"
+      />
     </div>
   </div>
 </template>
@@ -67,16 +73,28 @@ const props = defineProps<{
   search: string
   repositories: GitRepository[]
   selectedRepo: GitRepository | null
+  hasMore?: boolean
 }>()
 
 const emit = defineEmits<{
   "update:search": [value: string]
   select: [repo: GitRepository]
+  "load-more": []
 }>()
 
 const searchModel = computed({
   get: () => props.search,
   set: (value) => emit("update:search", value),
+})
+
+const loadMoreTrigger = ref<HTMLElement | null>(null)
+
+useIntersectionObserver(loadMoreTrigger, ([entry]) => {
+  if (entry?.isIntersecting && props.hasMore) {
+    emit("load-more")
+  }
+}, {
+  rootMargin: "240px",
 })
 
 function providerIcon(provider: GitRepository["provider"]) {

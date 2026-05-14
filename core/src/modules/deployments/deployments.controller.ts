@@ -57,8 +57,14 @@ export class DeploymentsController {
   )
   async getBuildLogs(@Req() req: any) {
     const customerId = this.getCustomerId(req);
+    const projectId = req.query.project
+      ? Number(req.query.project)
+      : undefined;
 
-    return this.deployment.getBuildLogs(customerId);
+    return this.deployment.getBuildLogs(
+      customerId,
+      Number.isFinite(projectId) ? projectId : undefined,
+    );
   }
 
   @UseGuards(JwtAuthGuard, PermissionGuard)

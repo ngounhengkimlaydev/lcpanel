@@ -12,11 +12,15 @@
       v-model:selected-repo="selectedRepo"
       :repositories="repositories"
       :filtered-repositories="filteredRepositories"
+      :visible-repositories="visibleRepositories"
+      :has-more-repositories="hasMoreRepositories"
       :form="form"
       :branch-options="branchOptions"
       :framework-options="frameworkOptions"
+      :submitting="isImporting"
       @cancel="cancelImport"
       @import="importProject"
+      @load-more="loadMoreRepositories"
     />
   </div>
 </template>
@@ -68,6 +72,9 @@ const providers = ref<GitProvider[]>([
 
 const repositories = ref<GitRepository[]>([])
 const selectedRepo = ref<GitRepository | null>(null)
+const isImporting = ref(false)
+const repositoryPageSize = 10
+const visibleRepositoryCount = ref(repositoryPageSize)
 
 const form = reactive<GitImportForm>({
   projectName: "",
@@ -78,6 +85,8 @@ const form = reactive<GitImportForm>({
   installCommand: "pnpm install",
   buildCommand: "pnpm build",
   outputDirectory: ".output",
+  nodeVersion: "22",
+  phpVersion: "8.3",
 })
 
 const branchOptions = ["main", "master", "production", "develop"]
@@ -106,6 +115,14 @@ const filteredRepositories = computed(() => {
   )
 })
 
+const visibleRepositories = computed(() =>
+  filteredRepositories.value.slice(0, visibleRepositoryCount.value),
+)
+
+const hasMoreRepositories = computed(() =>
+  visibleRepositoryCount.value < filteredRepositories.value.length,
+)
+
 onMounted(async () => {
   if (route.query.connected === "true") {
     toast.add({
@@ -130,6 +147,10 @@ watch(selectedRepo, (repo) => {
 
   form.branch = repo.branch
   form.framework = repo.framework
+})
+
+watch(search, () => {
+  visibleRepositoryCount.value = repositoryPageSize
 })
 
 async function connectProvider(provider: GitProvider) {
@@ -201,6 +222,7 @@ async function refreshRepositories(showToast = true) {
     const data: GitRepository[] = res.data || res.repositories || []
 
     repositories.value = data
+    visibleRepositoryCount.value = repositoryPageSize
 
     const selectedRepoExists = data.some(
       (repo) => repo.id === selectedRepo.value?.id,
@@ -225,7 +247,7 @@ async function refreshRepositories(showToast = true) {
 }
 
 async function importProject() {
-  if (!selectedRepo.value) return
+  if (!selectedRepo.value || isImporting.value) return
   const isManual = selectedRepo.value.provider === "manual"
   const repoUrl = isManual ? form.repoUrl.trim() : selectedRepo.value.repoUrl
 
@@ -240,6 +262,8 @@ async function importProject() {
   }
 
   try {
+    isImporting.value = true
+
     const res: any = await api.post("/deployments/projects/import", {
       ...form,
       repositoryId: isManual ? repoUrl : selectedRepo.value.repositoryId,
@@ -267,10 +291,18 @@ async function importProject() {
       description: "Please check your Git connection and server logs.",
       color: "error",
     })
+  } finally {
+    isImporting.value = false
   }
 }
 
 function cancelImport() {
   selectedRepo.value = null
+}
+
+function loadMoreRepositories() {
+  if (!hasMoreRepositories.value) return
+
+  visibleRepositoryCount.value += repositoryPageSize
 }
 </script>

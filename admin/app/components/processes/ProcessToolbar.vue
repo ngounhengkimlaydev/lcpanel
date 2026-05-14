@@ -10,7 +10,7 @@
                 base: 'w-40'
             }" @update:model-value="$emit('update:status', String($event))" />
 
-            <UButton icon="i-lucide-refresh-cw" color="neutral" variant="outline" />
+            <UButton icon="i-lucide-refresh-cw" color="neutral" variant="outline" @click="$emit('refresh')" />
 
             <UButton icon="i-lucide-filter" color="neutral" variant="outline" />
         </div>
@@ -26,6 +26,7 @@ defineProps<{
 defineEmits<{
     'update:search': [value: string]
     'update:status': [value: string]
+    refresh: []
 }>()
 
 const statusItems = [

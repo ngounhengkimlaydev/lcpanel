@@ -1,1 +1,1 @@
-export type GitProvider = "github" | "gitlab";
+export type { GitProvider } from "../types/deployment";

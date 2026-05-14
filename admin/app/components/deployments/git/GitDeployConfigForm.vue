@@ -49,6 +49,14 @@
         />
       </UFormField>
 
+      <UFormField label="Node Version">
+        <UInput v-model="form.nodeVersion" placeholder="22" />
+      </UFormField>
+
+      <UFormField label="PHP Version">
+        <UInput v-model="form.phpVersion" placeholder="8.3" />
+      </UFormField>
+
       <UFormField label="Root Directory">
         <UInput v-model="form.rootDirectory" placeholder="./" />
       </UFormField>
@@ -86,7 +94,12 @@
         Cancel
       </UButton>
 
-      <UButton icon="i-lucide-download-cloud" @click="$emit('import')">
+      <UButton
+        icon="i-lucide-download-cloud"
+        :loading="submitting"
+        :disabled="submitting"
+        @click="$emit('import')"
+      >
         Import Project
       </UButton>
     </div>
@@ -104,6 +117,7 @@ defineProps<{
   form: GitImportForm
   branchOptions: string[]
   frameworkOptions: string[]
+  submitting?: boolean
 }>()
 
 defineEmits<{

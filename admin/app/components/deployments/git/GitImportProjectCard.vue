@@ -21,9 +21,11 @@
     <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
       <GitRepositoryList
         v-model:search="searchModel"
-        :repositories="filteredRepositories"
+        :repositories="visibleRepositories"
         :selected-repo="selectedRepo"
+        :has-more="hasMoreRepositories"
         @select="selectedRepoModel = $event"
+        @load-more="$emit('load-more')"
       />
 
       <div class="lg:col-span-2">
@@ -33,6 +35,7 @@
           :form="form"
           :branch-options="branchOptions"
           :framework-options="frameworkOptions"
+          :submitting="submitting"
           @cancel="$emit('cancel')"
           @import="$emit('import')"
         />
@@ -56,9 +59,12 @@ const props = defineProps<{
   selectedRepo: GitRepository | null
   repositories: GitRepository[]
   filteredRepositories: GitRepository[]
+  visibleRepositories: GitRepository[]
+  hasMoreRepositories: boolean
   form: GitImportForm
   branchOptions: string[]
   frameworkOptions: string[]
+  submitting?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -66,6 +72,7 @@ const emit = defineEmits<{
   "update:selectedRepo": [repo: GitRepository | null]
   cancel: []
   import: []
+  "load-more": []
 }>()
 
 const searchModel = computed({

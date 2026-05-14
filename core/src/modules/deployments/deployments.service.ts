@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { spawn } from "child_process";
+import { spawn, spawnSync } from "child_process";
 import {
   copyFileSync,
   existsSync,
@@ -16,55 +16,29 @@ import {
 } from "fs";
 import net from "node:net";
 import { join, resolve } from "path";
+import { ServerGateway } from "../server/server.gateway";
 import { PullProjectDto } from "./dto/pull-project.dto";
 import { ImportProjectDto } from "./dto/import-project.dto";
 import { DeploymentsRepository } from "./deployments.repository";
-
-type GitProvider = "github" | "gitlab";
-type ProjectProvider = "github" | "gitlab" | "manual";
-type BuildLogStatus = "running" | "success" | "failed" | "cancelled";
-type DeployTarget = "ssr" | "static";
-type DeployStage = "install" | "build" | "deploy";
-type RuntimeKind = "nuxt" | "next" | "node";
-
-type BuildLogEntry = {
-  id: number;
-  project: string;
-  branch: string;
-  status: BuildLogStatus;
-  createdAt: Date;
-  updatedAt: Date;
-  currentStage: DeployStage | null;
-  installTime: string;
-  buildTime: string;
-  deployTime: string;
-  output: string[];
-};
-
-type RuntimeRegistration = {
-  kind: RuntimeKind;
-  port: number;
-  domain: string;
-};
-
-type DeploymentManifest = {
-  projectName: string;
-  branch: string;
-  domain: string;
-  framework: string;
-  rootDirectory: string;
-  installCommand?: string | null;
-  buildCommand?: string | null;
-  outputDirectory?: string | null;
-  pm2Name?: string | null;
-  target: DeployTarget;
-  runtime?: RuntimeRegistration | null;
-};
+import type {
+  BuildLogEntry,
+  BuildLogStatus,
+  DeployStage,
+  DeploymentManifest,
+  GitCommitSnapshot,
+  GitProvider,
+  ImportPipelineInput,
+  ProjectProvider,
+  PullPipelineInput,
+  RuntimeCommand,
+} from "./types/deployment";
 
 @Injectable()
 export class DeployService {
   private readonly appsPath: string;
   private readonly buildLogs = new Map<number, BuildLogEntry>();
+  private readonly buildLogsPath: string;
+  private readonly activePipelines = new Set<string>();
   private readonly nginxSitesAvailablePath: string;
   private readonly nginxSitesEnabledPath: string;
   private readonly nginxStagePath: string;
@@ -74,8 +48,12 @@ export class DeployService {
   constructor(
     private readonly config: ConfigService,
     private readonly repository: DeploymentsRepository,
+    private readonly serverGateway: ServerGateway,
   ) {
     this.appsPath = this.config.get<string>("LCPANEL_APPS_PATH") || "";
+    this.buildLogsPath =
+      this.config.get<string>("DEPLOY_BUILD_LOGS_PATH") ||
+      join(this.appsPath || process.cwd(), ".lcpanel", "build-logs");
     this.nginxSitesAvailablePath =
       this.config.get<string>("NGINX_SITES_AVAILABLE_PATH") ||
       "/etc/nginx/sites-available";
@@ -92,6 +70,7 @@ export class DeployService {
       this.config.get<string>("DEPLOY_DOMAIN_SUFFIX") || "localhost";
 
     mkdirSync(this.appsPath, { recursive: true });
+    mkdirSync(this.buildLogsPath, { recursive: true });
     mkdirSync(this.nginxStagePath, { recursive: true });
   }
 
@@ -208,9 +187,13 @@ export class DeployService {
   }
 
   async getDeploymentOverview(customerId: number) {
-    const projects = await this.repository.getGitProjects(customerId);
-    const deployments = projects.map((project) =>
-      this.toDeploymentItem(project),
+    const [projects, histories] = await Promise.all([
+      this.repository.getGitProjects(customerId),
+      this.repository.getDeploymentHistories(customerId),
+    ]);
+    const latestHistoryByProject = this.createLatestHistoryMap(histories as any[]);
+    const deployments = projects.map((project: any) =>
+      this.toDeploymentItem(project, latestHistoryByProject.get(project.id)),
     );
 
     return {
@@ -224,21 +207,21 @@ export class DeployService {
         {
           label: "Successful",
           value: String(
-            deployments.filter((item) => item.status === "success").length,
+            deployments.filter((item: any) => item.status === "success").length,
           ),
           icon: "i-lucide-circle-check",
         },
         {
           label: "Deploying",
           value: String(
-            deployments.filter((item) => item.status === "deploying").length,
+            deployments.filter((item: any) => item.status === "deploying").length,
           ),
           icon: "i-lucide-loader",
         },
         {
           label: "Failed",
           value: String(
-            deployments.filter((item) => item.status === "failed").length,
+            deployments.filter((item: any) => item.status === "failed").length,
           ),
           icon: "i-lucide-circle-x",
         },
@@ -248,6 +231,15 @@ export class DeployService {
   }
 
   async getDeploymentHistory(customerId: number) {
+    const histories = await this.repository.getDeploymentHistories(customerId);
+
+    if (histories.length) {
+      return {
+        data: histories.map((entry: any) => this.toStoredHistoryItem(entry)),
+        total: histories.length,
+      };
+    }
+
     const projects = await this.repository.getGitProjects(customerId);
     const history = projects.map((project) => this.toHistoryItem(project));
 
@@ -257,19 +249,39 @@ export class DeployService {
     };
   }
 
-  async getBuildLogs(customerId: number) {
-    const projects = await this.repository.getGitProjects(customerId);
-    const logs = projects.map((project) => this.toBuildLogItem(project));
+  async getBuildLogs(customerId: number, projectId?: number) {
+    const [plan, histories] = await Promise.all([
+      this.repository.getCurrentPlan(customerId),
+      this.repository.getDeploymentHistories(customerId),
+    ]);
+    const latestHistoryByProject = this.createLatestHistoryMap(histories);
+    const packagePlan = plan?.name || "No active plan";
+    const projects = projectId
+      ? [
+          await this.repository.findGitProjectByIdOrThrow(customerId, projectId),
+        ]
+      : await this.repository.getGitProjects(customerId);
+    const logs = projects.map((project) =>
+      this.toBuildLogItem(
+        project,
+        packagePlan,
+        latestHistoryByProject.get(project.id),
+      ),
+    );
 
     return {
       data: logs,
       total: logs.length,
+      meta: {
+        packagePlan,
+      },
     };
   }
 
   async importProject(customerId: number, dto: ImportProjectDto) {
     const projectName = this.safeProjectName(dto.projectName);
     const branch = this.safeBranchName(dto.branch);
+    const lockKey = this.getPipelineKey(customerId, projectName);
 
     const projectPath = this.safeJoin(this.appsPath, projectName);
     const rootDirectory = dto.rootDirectory || "./";
@@ -294,38 +306,61 @@ export class DeployService {
       token,
     );
 
-    const project = await this.repository.upsertGitProject(customerId, {
-      provider: dto.provider,
-      providerRepoId: dto.repositoryId,
-      connectionId,
-      name: projectName,
-      fullName: dto.projectName,
-      cloneUrl: dto.repoUrl,
-      sshUrl: dto.sshUrl,
-      htmlUrl: dto.htmlUrl,
-      defaultBranch: branch,
-      localPath: projectPath,
-      status: "running",
-    });
+    this.startPipeline(lockKey, "An import");
 
-    this.startBuildLog(project.id, projectName, branch);
-    this.appendBuildLog(project.id, `Queued import for ${projectName}.`);
+    try {
+      const project = await this.repository.upsertGitProject(customerId, {
+        provider: dto.provider,
+        providerRepoId: dto.repositoryId,
+        connectionId,
+        name: projectName,
+        fullName: dto.projectName,
+        cloneUrl: dto.repoUrl,
+        sshUrl: dto.sshUrl,
+        htmlUrl: dto.htmlUrl,
+        defaultBranch: branch,
+        localPath: projectPath,
+        status: "running",
+      });
 
-    void this.runImportPipeline({
-      customerId,
-      projectId: project.id,
-      projectName,
-      branch,
-      cloneUrl,
-      projectPath,
-      buildPath,
-      dto,
-    });
+      const plan = await this.repository.getCurrentPlan(customerId);
+      const history = await this.repository.createDeploymentHistory(
+        customerId,
+        project.id,
+        {
+          projectName,
+          branch,
+          status: "running",
+          trigger: "import",
+          message: "Import started",
+          author: dto.provider || "Manual",
+          planName: plan?.name || null,
+        },
+      );
 
-    return {
-      message: "Project import started",
-      data: project,
-    };
+      this.startBuildLog(customerId, project.id, projectName, branch, history.id);
+      this.appendBuildLog(project.id, `Queued import for ${projectName}.`);
+
+      void this.runImportPipeline({
+        customerId,
+        projectId: project.id,
+        projectName,
+        branch,
+        cloneUrl,
+        projectPath,
+        buildPath,
+        dto,
+        lockKey,
+      });
+
+      return {
+        message: "Project import started",
+        data: project,
+      };
+    } catch (error) {
+      this.releasePipeline(lockKey);
+      throw error;
+    }
   }
 
   async pullProject(customerId: number, id: number, dto: PullProjectDto) {
@@ -333,6 +368,8 @@ export class DeployService {
       customerId,
       id,
     );
+    const projectName = project.name || project.full_name || "Untitled project";
+    const lockKey = this.getPipelineKey(customerId, projectName);
 
     if (!project.local_path) {
       throw new NotFoundException("Project local path not found");
@@ -350,35 +387,56 @@ export class DeployService {
     const rootDirectory = manifest?.rootDirectory || "./";
     const buildPath = this.safeJoin(project.local_path, rootDirectory);
     const branch = manifest?.branch || project.default_branch || "main";
-    const projectName = project.name || project.full_name || "Untitled project";
+    this.startPipeline(lockKey, "A deployment");
 
-    await this.repository.updateGitProject(customerId, id, {
-      status: "running",
-      localPath: project.local_path,
-      defaultBranch: branch,
-    });
-
-    this.startBuildLog(project.id, projectName, branch);
-    this.appendBuildLog(project.id, `Queued deployment for ${projectName}.`);
-
-    void this.runPullPipeline({
-      customerId,
-      projectId: id,
-      projectName,
-      branch,
-      projectPath: project.local_path,
-      buildPath,
-      dto,
-      manifest,
-    });
-
-    return {
-      message: "Deployment started",
-      data: {
-        ...project,
+    try {
+      await this.repository.updateGitProject(customerId, id, {
         status: "running",
-      },
-    };
+        localPath: project.local_path,
+        defaultBranch: branch,
+      });
+
+      const plan = await this.repository.getCurrentPlan(customerId);
+      const history = await this.repository.createDeploymentHistory(
+        customerId,
+        project.id,
+        {
+          projectName,
+          branch,
+          status: "running",
+          trigger: "redeploy",
+          message: "Redeploy started",
+          author: project.connection?.username || project.provider || "Manual",
+          planName: plan?.name || null,
+        },
+      );
+
+      this.startBuildLog(customerId, project.id, projectName, branch, history.id);
+      this.appendBuildLog(project.id, `Queued deployment for ${projectName}.`);
+
+      void this.runPullPipeline({
+        customerId,
+        projectId: id,
+        projectName,
+        branch,
+        projectPath: project.local_path,
+        buildPath,
+        dto,
+        manifest,
+        lockKey,
+      });
+
+      return {
+        message: "Deployment started",
+        data: {
+          ...project,
+          status: "running",
+        },
+      };
+    } catch (error) {
+      this.releasePipeline(lockKey);
+      throw error;
+    }
   }
 
   async deleteProject(customerId: number, id: number) {
@@ -405,16 +463,7 @@ export class DeployService {
     };
   }
 
-  private async runImportPipeline(input: {
-    customerId: number;
-    projectId: number;
-    projectName: string;
-    branch: string;
-    cloneUrl: string;
-    projectPath: string;
-    buildPath: string;
-    dto: ImportProjectDto;
-  }) {
+  private async runImportPipeline(input: ImportPipelineInput) {
     const manifest = this.createDeploymentManifest(
       input.projectName,
       input.branch,
@@ -425,18 +474,21 @@ export class DeployService {
       if (!existsSync(input.projectPath)) {
         this.appendBuildLog(
           input.projectId,
-          `$ git clone --branch ${input.branch} --depth 1 ${input.dto.repoUrl}`,
+          `Cloning repository source for ${input.branch}.`,
         );
 
-        await this.runLoggedCommand(input.projectId, "git", [
-          "clone",
-          "--branch",
-          input.branch,
-          "--depth",
-          "1",
-          input.cloneUrl,
-          input.projectPath,
-        ]);
+        await this.run(
+          "git",
+          [
+            "clone",
+            "--branch",
+            input.branch,
+            "--depth",
+            "1",
+            input.cloneUrl,
+            input.projectPath,
+          ],
+        );
       } else {
         if (!existsSync(join(input.projectPath, ".git"))) {
           throw new BadRequestException(
@@ -456,6 +508,7 @@ export class DeployService {
       }
 
       this.writeDeploymentManifest(input.projectPath, manifest);
+      this.appendRuntimePreferences(input.projectId, manifest);
 
       if (manifest.installCommand) {
         await this.runBuildStage(input.projectId, "install", async () => {
@@ -463,6 +516,7 @@ export class DeployService {
             manifest.installCommand!,
             input.buildPath,
             (chunk) => this.appendBuildLog(input.projectId, chunk),
+            this.getBuildEnvOverrides(manifest),
           );
         });
       }
@@ -473,6 +527,7 @@ export class DeployService {
             manifest.buildCommand!,
             input.buildPath,
             (chunk) => this.appendBuildLog(input.projectId, chunk),
+            this.getBuildEnvOverrides(manifest),
           );
         });
       }
@@ -502,23 +557,33 @@ export class DeployService {
         input.projectId,
         `Deployment ready at ${this.toPreviewUrl(registeredManifest.domain)}.`,
       );
+      await this.finalizeDeploymentHistory(
+        input.customerId,
+        input.projectId,
+        input.projectPath,
+        registeredManifest,
+        "success",
+        "Initial deployment completed successfully.",
+      );
       this.finishBuildLog(input.projectId, "success");
     } catch (error) {
-      await this.failPipeline(input.customerId, input.projectId, error);
+      await this.failPipeline(
+        input.customerId,
+        input.projectId,
+        input.projectPath,
+        error,
+      );
+    } finally {
+      this.releasePipeline(input.lockKey);
     }
   }
 
-  private async runPullPipeline(input: {
-    customerId: number;
-    projectId: number;
-    projectName: string;
-    branch: string;
-    projectPath: string;
-    buildPath: string;
-    dto: PullProjectDto;
-    manifest: DeploymentManifest | null;
-  }) {
+  private async runPullPipeline(input: PullPipelineInput) {
     try {
+      if (input.manifest) {
+        this.appendRuntimePreferences(input.projectId, input.manifest);
+      }
+
       await this.pullGitCode(input.projectId, input.projectPath, input.branch);
 
       if (input.dto.install && input.manifest?.installCommand) {
@@ -527,6 +592,7 @@ export class DeployService {
             input.manifest!.installCommand!,
             input.buildPath,
             (chunk) => this.appendBuildLog(input.projectId, chunk),
+            this.getBuildEnvOverrides(input.manifest!),
           );
         });
       } else if (input.dto.install) {
@@ -542,6 +608,7 @@ export class DeployService {
             input.manifest!.buildCommand!,
             input.buildPath,
             (chunk) => this.appendBuildLog(input.projectId, chunk),
+            this.getBuildEnvOverrides(input.manifest!),
           );
         });
       } else if (input.dto.build) {
@@ -591,9 +658,24 @@ export class DeployService {
         );
       }
 
+      await this.finalizeDeploymentHistory(
+        input.customerId,
+        input.projectId,
+        input.projectPath,
+        nextManifest,
+        "success",
+        "Redeploy completed successfully.",
+      );
       this.finishBuildLog(input.projectId, "success");
     } catch (error) {
-      await this.failPipeline(input.customerId, input.projectId, error);
+      await this.failPipeline(
+        input.customerId,
+        input.projectId,
+        input.projectPath,
+        error,
+      );
+    } finally {
+      this.releasePipeline(input.lockKey);
     }
   }
 
@@ -671,6 +753,8 @@ export class DeployService {
       buildCommand: dto.buildCommand || null,
       outputDirectory: dto.outputDirectory || null,
       pm2Name: dto.pm2Name || projectName,
+      nodeVersion: dto.nodeVersion || null,
+      phpVersion: dto.phpVersion || null,
       target: "ssr",
       runtime: null,
     };
@@ -712,12 +796,16 @@ export class DeployService {
   }
 
   private startBuildLog(
+    customerId: number,
     projectId: number,
     projectName: string,
     branch: string,
+    historyId: number | null,
   ) {
-    this.buildLogs.set(projectId, {
+    const entry: BuildLogEntry = {
       id: projectId,
+      customerId,
+      historyId,
       project: projectName,
       branch,
       status: "running",
@@ -728,7 +816,11 @@ export class DeployService {
       buildTime: "-",
       deployTime: "-",
       output: [],
-    });
+    };
+
+    this.buildLogs.set(projectId, entry);
+    this.persistBuildLog(entry);
+    this.emitBuildLogSnapshot(entry);
   }
 
   private appendBuildLog(projectId: number, chunk: string) {
@@ -746,9 +838,12 @@ export class DeployService {
       }
 
       entry.output.push(line);
+      entry.updatedAt = new Date();
+      this.emitBuildLogAppend(entry, line);
     }
 
     entry.updatedAt = new Date();
+    this.persistBuildLog(entry);
   }
 
   private async runBuildStage(
@@ -765,6 +860,7 @@ export class DeployService {
       if (stage === "install") entry.installTime = "Running";
       if (stage === "build") entry.buildTime = "Running";
       if (stage === "deploy") entry.deployTime = "Running";
+      this.emitBuildLogSnapshot(entry);
     }
 
     await action();
@@ -778,6 +874,8 @@ export class DeployService {
       if (stage === "install") entry.installTime = duration;
       if (stage === "build") entry.buildTime = duration;
       if (stage === "deploy") entry.deployTime = duration;
+      this.persistBuildLog(entry);
+      this.emitBuildLogSnapshot(entry);
     }
   }
 
@@ -791,11 +889,14 @@ export class DeployService {
     entry.status = status;
     entry.currentStage = null;
     entry.updatedAt = new Date();
+    this.persistBuildLog(entry);
+    this.emitBuildLogSnapshot(entry);
   }
 
   private async failPipeline(
     customerId: number,
     projectId: number,
+    projectPath: string,
     error: unknown,
   ) {
     const message =
@@ -815,6 +916,90 @@ export class DeployService {
     await this.repository.updateGitProject(customerId, projectId, {
       status: "failed",
     });
+
+    await this.finalizeDeploymentHistory(
+      customerId,
+      projectId,
+      projectPath,
+      this.readDeploymentManifest(projectPath),
+      "failed",
+      message,
+    );
+  }
+
+  private async finalizeDeploymentHistory(
+    customerId: number,
+    projectId: number,
+    projectPath: string,
+    manifest: DeploymentManifest | null,
+    status: BuildLogStatus,
+    fallbackMessage: string,
+  ) {
+    const entry = this.buildLogs.get(projectId) || this.readStoredBuildLog(projectId);
+
+    if (!entry?.historyId) {
+      return;
+    }
+
+    const commit = this.readGitCommitSnapshot(projectPath);
+    const plan = await this.repository.getCurrentPlan(customerId);
+    const durationMs = entry.updatedAt.getTime() - entry.createdAt.getTime();
+
+    await this.repository.updateDeploymentHistory(entry.historyId, {
+      branch: manifest?.branch || entry.branch,
+      commitHash: commit?.hash ?? null,
+      commitShort: commit?.shortHash ?? null,
+      commitMessage: commit?.subject ?? null,
+      author: commit?.author ?? null,
+      status,
+      message: commit?.subject || fallbackMessage,
+      domain: manifest?.domain ? this.toPreviewUrl(manifest.domain) : null,
+      installTime: entry.installTime,
+      buildTime: entry.buildTime,
+      deployTime: entry.deployTime,
+      durationMs,
+      planName: plan?.name || null,
+      environment: "Production",
+    });
+
+    const currentEntry = this.buildLogs.get(projectId);
+
+    if (currentEntry) {
+      currentEntry.historyId = entry.historyId;
+    }
+  }
+
+  private emitBuildLogSnapshot(entry: BuildLogEntry) {
+    this.serverGateway.sendDeploymentLog(entry.customerId, {
+      type: "snapshot",
+      log: this.toSocketBuildLog(entry, true),
+    });
+  }
+
+  private emitBuildLogAppend(entry: BuildLogEntry, outputChunk: string) {
+    this.serverGateway.sendDeploymentLog(entry.customerId, {
+      type: "append",
+      outputChunk,
+      log: this.toSocketBuildLog(entry, false),
+    });
+  }
+
+  private toSocketBuildLog(entry: BuildLogEntry, includeOutput: boolean) {
+    return {
+      id: entry.id,
+      project: entry.project,
+      branch: entry.branch,
+      commit: "-",
+      status: entry.status,
+      duration: this.formatDuration(
+        entry.updatedAt.getTime() - entry.createdAt.getTime(),
+      ),
+      createdAt: entry.createdAt.toISOString(),
+      installTime: entry.installTime,
+      buildTime: entry.buildTime,
+      deployTime: entry.deployTime,
+      output: includeOutput ? entry.output.join("\n") : undefined,
+    };
   }
 
   private formatDuration(durationMs: number) {
@@ -853,7 +1038,7 @@ export class DeployService {
     projectName: string,
     buildPath: string,
     manifest: DeploymentManifest,
-  ) {
+  ): Promise<RuntimeCommand> {
     const preferredPort = manifest.runtime?.port;
     const port = preferredPort || (await this.findAvailablePort(4100));
     const nuxtEntry = join(buildPath, ".output", "server", "index.mjs");
@@ -935,23 +1120,23 @@ export class DeployService {
     projectId: number,
     pm2Name: string,
     buildPath: string,
-    runtime: {
-      kind: RuntimeKind;
-      command: string;
-      args: string[];
-      port: number;
-      env: NodeJS.ProcessEnv;
-    },
+    runtime: RuntimeCommand,
   ) {
     const safeName = this.safePm2Name(pm2Name);
 
+    this.appendBuildLog(
+      projectId,
+      `Preparing production runtime for ${safeName}.`,
+    );
     await this.runAllowFailure(
       "pm2",
       ["delete", safeName],
-      undefined,
-      (chunk) => this.appendBuildLog(projectId, chunk),
     );
 
+    this.appendBuildLog(
+      projectId,
+      "Starting application.",
+    );
     await this.run(
       "pm2",
       [
@@ -965,8 +1150,13 @@ export class DeployService {
         ...runtime.args,
       ],
       undefined,
-      (chunk) => this.appendBuildLog(projectId, chunk),
+      undefined,
       runtime.env,
+    );
+
+    this.appendBuildLog(
+      projectId,
+      `Application is running on port ${runtime.port}.`,
     );
   }
 
@@ -1589,27 +1779,11 @@ export class DeployService {
     projectPath: string,
     branch: string,
   ) {
-    this.appendBuildLog(projectId, `$ git fetch origin ${branch}`);
-    await this.runLoggedCommand(
-      projectId,
-      "git",
-      ["fetch", "origin", branch],
-      projectPath,
-    );
-    this.appendBuildLog(projectId, `$ git checkout ${branch}`);
-    await this.runLoggedCommand(
-      projectId,
-      "git",
-      ["checkout", branch],
-      projectPath,
-    );
-    this.appendBuildLog(projectId, `$ git reset --hard origin/${branch}`);
-    await this.runLoggedCommand(
-      projectId,
-      "git",
-      ["reset", "--hard", `origin/${branch}`],
-      projectPath,
-    );
+    this.appendBuildLog(projectId, `Syncing latest source from ${branch}.`);
+    await this.run("git", ["fetch", "origin", branch], projectPath);
+    await this.run("git", ["checkout", branch], projectPath);
+    await this.run("git", ["reset", "--hard", `origin/${branch}`], projectPath);
+    this.appendBuildLog(projectId, "Source sync completed.");
   }
 
   private async restartPm2(pm2Name: string) {
@@ -1622,6 +1796,7 @@ export class DeployService {
     command: string,
     cwd: string,
     onOutput?: (chunk: string) => void,
+    envOverrides?: NodeJS.ProcessEnv,
   ) {
     const parsed = this.parseCommand(command);
 
@@ -1645,7 +1820,49 @@ export class DeployService {
       );
     }
 
-    return this.run(parsed.command, parsed.args, cwd, onOutput);
+    return this.run(parsed.command, parsed.args, cwd, onOutput, envOverrides);
+  }
+
+  private getBuildEnvOverrides(manifest: DeploymentManifest) {
+    const env: NodeJS.ProcessEnv = {};
+
+    if (manifest.nodeVersion) {
+      env.NODE_VERSION = manifest.nodeVersion;
+      env.NIXPACKS_NODE_VERSION = manifest.nodeVersion;
+      env.LCPANEL_NODE_VERSION = manifest.nodeVersion;
+    }
+
+    if (manifest.phpVersion) {
+      env.PHP_VERSION = manifest.phpVersion;
+      env.NIXPACKS_PHP_VERSION = manifest.phpVersion;
+      env.LCPANEL_PHP_VERSION = manifest.phpVersion;
+    }
+
+    return env;
+  }
+
+  private appendRuntimePreferences(
+    projectId: number,
+    manifest: DeploymentManifest,
+  ) {
+    const versions: string[] = [];
+
+    if (manifest.nodeVersion) {
+      versions.push(`Node ${manifest.nodeVersion}`);
+    }
+
+    if (manifest.phpVersion) {
+      versions.push(`PHP ${manifest.phpVersion}`);
+    }
+
+    if (!versions.length) {
+      return;
+    }
+
+    this.appendBuildLog(
+      projectId,
+      `Runtime preference: ${versions.join(" / ")}.`,
+    );
   }
 
   private parseCommand(commandString: string) {
@@ -1785,20 +2002,25 @@ export class DeployService {
     return language;
   }
 
-  private toDeploymentItem(project: any) {
+  private toDeploymentItem(project: any, latestHistory?: any) {
     const manifest = this.readDeploymentManifest(project.local_path);
     const liveLog = this.buildLogs.get(project.id);
+    const commit = latestHistory?.commit_short || this.readGitCommitSnapshot(project.local_path)?.shortHash || "-";
     const status =
       liveLog?.status === "running"
         ? "deploying"
-        : this.toDeployStatus(project.status);
+        : latestHistory?.status === "failed"
+          ? "failed"
+          : this.toDeployStatus(project.status);
     const name = project.name || project.full_name || "Untitled project";
     const branch = project.default_branch || "main";
     const framework =
       manifest?.framework || this.detectFrameworkFromProject(project);
-    const domain = manifest?.domain
-      ? this.toPreviewUrl(manifest.domain)
-      : this.toPreviewUrl(this.getDeploymentDomain(name));
+    const domain =
+      latestHistory?.domain ||
+      (manifest?.domain
+        ? this.toPreviewUrl(manifest.domain)
+        : this.toPreviewUrl(this.getDeploymentDomain(name)));
 
     return {
       id: project.id,
@@ -1809,29 +2031,38 @@ export class DeployService {
       branch,
       environment: "Production",
       domain,
-      commit: "-",
-      lastDeploy: project.last_pulled_at
-        ? project.last_pulled_at.toISOString()
-        : liveLog?.updatedAt.toISOString() ||
-          project.updated_at?.toISOString?.() ||
-          "-",
+      commit,
+      lastDeploy:
+        liveLog?.updatedAt.toISOString() ||
+        latestHistory?.created_at?.toISOString?.() ||
+        project.last_pulled_at?.toISOString?.() ||
+        project.updated_at?.toISOString?.() ||
+        "-",
       buildTime:
-        liveLog?.buildTime || (status === "deploying" ? "Running" : "-"),
+        liveLog?.buildTime ||
+        latestHistory?.build_time ||
+        (status === "deploying" ? "Running" : "-"),
       status,
       icon: this.getFrameworkIcon(framework),
       provider: project.provider,
       repoUrl: project.clone_url,
       localPath: project.local_path,
+      nodeVersion: manifest?.nodeVersion || null,
+      phpVersion: manifest?.phpVersion || null,
     };
   }
 
   private toHistoryItem(project: any) {
     const liveLog = this.buildLogs.get(project.id);
+    const manifest = this.readDeploymentManifest(project.local_path);
     const status = liveLog?.status || this.toHistoryStatus(project.status);
     const deployedAt = project.last_pulled_at || project.updated_at;
+    const commit =
+      this.readGitCommitSnapshot(project.local_path)?.shortHash || "-";
 
     return {
       id: project.id,
+      projectId: project.id,
       project: project.name || project.full_name || "Untitled project",
       message:
         liveLog?.status === "running"
@@ -1840,35 +2071,82 @@ export class DeployService {
             ? "Pulled latest source code"
             : "Imported Git repository",
       branch: project.default_branch || "main",
-      commit: "-",
+      commit,
       status,
       environment: "Production",
       author: project.connection?.username || project.provider || "Manual",
       deployedAt: deployedAt?.toISOString?.() || "-",
       duration: status === "running" ? "Running" : "-",
       version: `#${project.id}`,
-      domain: project.html_url || "-",
+      domain:
+        project.html_url ||
+        (manifest?.domain
+          ? this.toPreviewUrl(manifest.domain)
+          : "-"),
     };
   }
 
-  private toBuildLogItem(project: any) {
-    const liveLog = this.buildLogs.get(project.id);
+  private toStoredHistoryItem(entry: any) {
+    return {
+      id: entry.id,
+      projectId: entry.project_id,
+      project: entry.project_name,
+      message: entry.message,
+      branch: entry.branch,
+      commit: entry.commit_short || "-",
+      status: entry.status,
+      environment: entry.environment || "Production",
+      author: entry.author || "Manual",
+      deployedAt: entry.created_at?.toISOString?.() || "-",
+      duration:
+        entry.duration_ms != null
+          ? this.formatDuration(entry.duration_ms)
+          : entry.status === "running"
+            ? "Running"
+            : "-",
+      version: `DEP-${String(entry.id).padStart(4, "0")}`,
+      domain: entry.domain || "-",
+    };
+  }
+
+  private toBuildLogItem(project: any, packagePlan: string, latestHistory?: any) {
+    const liveLog =
+      this.buildLogs.get(project.id) || this.readStoredBuildLog(project.id);
+    const manifest = this.readDeploymentManifest(project.local_path);
+    const commit =
+      latestHistory?.commit_short ||
+      this.readGitCommitSnapshot(project.local_path)?.shortHash ||
+      "-";
+    const domain =
+      latestHistory?.domain ||
+      (manifest?.domain
+        ? this.toPreviewUrl(manifest.domain)
+        : this.extractDomainFromStoredLog(liveLog) ||
+          this.toPreviewUrl(this.getDeploymentDomain(project.name || project.full_name || "app")));
 
     if (liveLog) {
+      if (!this.buildLogs.has(project.id)) {
+        this.buildLogs.set(project.id, liveLog);
+      }
+
       return {
         id: project.id,
         project: liveLog.project,
         branch: liveLog.branch,
-        commit: "-",
+        commit,
         status: liveLog.status,
         duration: this.formatDuration(
           liveLog.updatedAt.getTime() - liveLog.createdAt.getTime(),
         ),
-        createdAt: liveLog.updatedAt.toISOString(),
+        createdAt: liveLog.createdAt.toISOString(),
         installTime: liveLog.installTime,
         buildTime: liveLog.buildTime,
         deployTime: liveLog.deployTime,
         output: liveLog.output.join("\n"),
+        packagePlan,
+        nodeVersion: manifest?.nodeVersion || "System default",
+        phpVersion: manifest?.phpVersion || "System default",
+        domain,
       };
     }
 
@@ -1880,7 +2158,7 @@ export class DeployService {
       id: project.id,
       project: projectName,
       branch,
-      commit: "-",
+      commit,
       status,
       duration: status === "running" ? "Running" : "-",
       createdAt: project.updated_at?.toISOString?.() || "-",
@@ -1888,6 +2166,10 @@ export class DeployService {
       buildTime: status === "running" ? "Running" : "-",
       deployTime: "-",
       output: this.buildLogOutput(projectName, branch, project.status),
+      packagePlan,
+      nodeVersion: manifest?.nodeVersion || "System default",
+      phpVersion: manifest?.phpVersion || "System default",
+      domain,
     };
   }
 
@@ -1936,22 +2218,136 @@ export class DeployService {
   }
 
   private buildLogOutput(projectName: string, branch: string, status?: string) {
-    const lines = [
-      `$ git fetch origin ${branch}`,
-      `$ git checkout ${branch}`,
-      `$ git reset --hard origin/${branch}`,
-    ];
+    const lines = [`Preparing deployment build log for ${projectName}.`];
 
     if (status === "pulled") {
-      lines.push("Source code pulled successfully.");
+      lines.push(`Latest build for ${branch} completed successfully.`);
     } else if (status === "imported") {
       lines.push(`Project ${projectName} imported successfully.`);
     } else if (status === "failed") {
       lines.push("Deployment failed. Check server logs for the command error.");
     } else {
-      lines.push("Waiting for deployment action.");
+      lines.push("Build log is being prepared. Waiting for live websocket updates...");
     }
 
     return lines.join("\n");
+  }
+
+  private getBuildLogPath(projectId: number) {
+    return join(this.buildLogsPath, `${projectId}.json`);
+  }
+
+  private persistBuildLog(entry: BuildLogEntry) {
+    writeFileSync(
+      this.getBuildLogPath(entry.id),
+      JSON.stringify(
+        {
+          ...entry,
+          createdAt: entry.createdAt.toISOString(),
+          updatedAt: entry.updatedAt.toISOString(),
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+  }
+
+  private readStoredBuildLog(projectId: number): BuildLogEntry | null {
+    const path = this.getBuildLogPath(projectId);
+
+    if (!existsSync(path)) {
+      return null;
+    }
+
+    try {
+      const parsed = JSON.parse(readFileSync(path, "utf8"));
+
+      return {
+        ...parsed,
+        customerId: parsed.customerId ? Number(parsed.customerId) : 0,
+        historyId:
+          parsed.historyId == null ? null : Number(parsed.historyId),
+        createdAt: new Date(parsed.createdAt),
+        updatedAt: new Date(parsed.updatedAt),
+      } as BuildLogEntry;
+    } catch {
+      return null;
+    }
+  }
+
+  private createLatestHistoryMap(histories: any[]) {
+    const latestHistoryByProject = new Map<number, any>();
+
+    for (const entry of histories) {
+      if (!latestHistoryByProject.has(entry.project_id)) {
+        latestHistoryByProject.set(entry.project_id, entry);
+      }
+    }
+
+    return latestHistoryByProject;
+  }
+
+  private extractDomainFromStoredLog(entry: BuildLogEntry | null) {
+    if (!entry?.output?.length) {
+      return null;
+    }
+
+    const match = entry.output
+      .join("\n")
+      .match(/Deployment ready at (https?:\/\/[^\s]+)/);
+
+    return match?.[1]?.replace(/\.$/, "") || null;
+  }
+
+  private readGitCommitSnapshot(projectPath?: string | null): GitCommitSnapshot | null {
+    if (!projectPath || !existsSync(join(projectPath, ".git"))) {
+      return null;
+    }
+
+    const result = spawnSync(
+      "git",
+      ["log", "-1", "--pretty=%H%n%h%n%s%n%an"],
+      {
+        cwd: projectPath,
+        encoding: "utf8",
+      },
+    );
+
+    if (result.status !== 0 || !result.stdout?.trim()) {
+      return null;
+    }
+
+    const [hash = "", shortHash = "", subject = "", author = ""] =
+      result.stdout.trim().split("\n");
+
+    if (!hash) {
+      return null;
+    }
+
+    return {
+      hash,
+      shortHash,
+      subject,
+      author,
+    };
+  }
+
+  private getPipelineKey(customerId: number, projectName: string) {
+    return `${customerId}:${projectName}`;
+  }
+
+  private startPipeline(lockKey: string, action: string) {
+    if (this.activePipelines.has(lockKey)) {
+      throw new BadRequestException(
+        `${action} is already running for this project. Please wait for it to finish.`,
+      );
+    }
+
+    this.activePipelines.add(lockKey);
+  }
+
+  private releasePipeline(lockKey: string) {
+    this.activePipelines.delete(lockKey);
   }
 }

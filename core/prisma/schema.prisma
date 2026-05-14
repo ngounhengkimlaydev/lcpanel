@@ -113,6 +113,7 @@ model Customer {
   role           Role            @relation(fields: [role_id], references: [id])
   gitConnections GitConnection[]
   gitProjects    GitProject[]
+  deploymentHistories DeploymentHistory[]
   invoices       Invoices[]
   subscription   Subscriptions?
 
@@ -199,12 +200,44 @@ model GitProject {
   created_at       DateTime  @default(now())
   updated_at       DateTime  @updatedAt
 
-  connection GitConnection? @relation(fields: [connection_id], references: [id])
-  customer   Customer       @relation(fields: [customer_id], references: [id])
+  connection          GitConnection?      @relation(fields: [connection_id], references: [id])
+  customer            Customer            @relation(fields: [customer_id], references: [id])
+  deploymentHistories DeploymentHistory[]
 
   @@unique([customer_id, provider, provider_repo_id])
   @@index([customer_id, connection_id])
   @@map("git_project")
+}
+
+model DeploymentHistory {
+  id            Int       @id @default(autoincrement())
+  customer_id   BigInt
+  project_id    Int
+  project_name  String
+  branch        String
+  commit_hash   String?
+  commit_short  String?
+  commit_message String?
+  author        String?
+  status        String
+  trigger       String
+  message       String
+  environment   String    @default("Production")
+  domain        String?
+  install_time  String?
+  build_time    String?
+  deploy_time   String?
+  duration_ms   Int?
+  plan_name     String?
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+
+  customer Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  project  GitProject @relation(fields: [project_id], references: [id], onDelete: Cascade)
+
+  @@index([customer_id, created_at], map: "idx_deployment_history_customer_created_at")
+  @@index([project_id, created_at], map: "idx_deployment_history_project_created_at")
+  @@map("deployment_history")
 }
 
 model Plans {

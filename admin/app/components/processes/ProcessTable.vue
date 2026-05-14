@@ -31,6 +31,7 @@ const emit = defineEmits<{
 
 const props = defineProps<{
     processes: ServerProcess[]
+    showActions?: boolean
 }>()
 
 const page = ref(1)
@@ -50,82 +51,92 @@ watch(
     }
 )
 
-const columns: TableColumn<ServerProcess>[] = [
-    {
-        accessorKey: 'name',
-        header: 'Process',
-        cell: ({ row }) => h('div', { class: 'flex items-center gap-3' }, [
-            h('div', {
-                class: 'flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary font-bold'
-            }, row.original.name.charAt(0).toUpperCase()),
-            h('div', {}, [
-                h('p', { class: 'font-medium text-highlighted' }, row.original.name),
-                h('p', { class: 'text-sm text-muted' }, `PID: ${row.original.pid}`)
+const columns = computed<TableColumn<ServerProcess>[]>(() => {
+    const baseColumns: TableColumn<ServerProcess>[] = [
+        {
+            accessorKey: 'name',
+            header: 'Process',
+            cell: ({ row }) => h('div', { class: 'flex items-center gap-3' }, [
+                h('div', {
+                    class: 'flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary font-bold'
+                }, row.original.name.charAt(0).toUpperCase()),
+                h('div', {}, [
+                    h('p', { class: 'font-medium text-highlighted' }, row.original.name),
+                    h('p', { class: 'text-sm text-muted' }, `PID: ${row.original.pid}`)
+                ])
             ])
-        ])
-    },
-    { accessorKey: 'user', header: 'User' },
-    {
-        accessorKey: 'cpu',
-        header: 'CPU',
-        cell: ({ row }) => `${row.original.cpu}%`
-    },
-    {
-        accessorKey: 'memory',
-        header: 'Memory',
-        cell: ({ row }) => `${row.original.memory} MB`
-    },
-    {
-        accessorKey: 'status',
-        header: 'Status',
-        cell: ({ row }) => {
-            const status = row.original.status
+        },
+        { accessorKey: 'user', header: 'User' },
+        {
+            accessorKey: 'cpu',
+            header: 'CPU',
+            cell: ({ row }) => `${row.original.cpu}%`
+        },
+        {
+            accessorKey: 'memory',
+            header: 'Memory',
+            cell: ({ row }) => `${row.original.memory} MB`
+        },
+        {
+            accessorKey: 'status',
+            header: 'Status',
+            cell: ({ row }) => {
+                const status = row.original.status
 
-            const colorMap: Record<string, string> = {
-                running: 'success',
-                stopped: 'neutral',
-                sleeping: 'warning',
-                error: 'error'
-            }
+                const colorMap: Record<string, string> = {
+                    running: 'success',
+                    stopped: 'neutral',
+                    sleeping: 'warning',
+                    error: 'error'
+                }
 
-            return h(resolveComponent('UBadge'), {
-                color: colorMap[status] || 'neutral',
-                variant: 'soft',
-                class: 'capitalize'
-            }, {
-                default: () => status
-            })
-        }
-    },
-    { accessorKey: 'uptime', header: 'Uptime' },
-    {
-        id: 'actions',
-        header: '',
-        cell: ({ row }) => {
-            const items: DropdownMenuItem[][] = [
-                [
-                    {
-                        label: 'Edit',
-                        icon: 'i-lucide-pencil',
-                        onSelect: () => emit('edit', row.original)
-                    },
-                    {
-                        label: 'Kill Process',
-                        icon: 'i-lucide-circle-x',
-                        color: 'error',
-                        onSelect: () => emit('delete', row.original)
-                    }
-                ]
-            ]
-
-            return h(resolveComponent('UDropdownMenu'), { items }, {
-                default: () => h(resolveComponent('UButton'), {
-                    icon: 'i-lucide-ellipsis',
-                    color: 'neutral',
-                    variant: 'ghost'
+                return h(resolveComponent('UBadge'), {
+                    color: colorMap[status] || 'neutral',
+                    variant: 'soft',
+                    class: 'capitalize'
+                }, {
+                    default: () => status
                 })
-            })
-        }
+            }
+        },
+        { accessorKey: 'uptime', header: 'Uptime' }
+    ]
+
+    if (props.showActions === false) {
+        return baseColumns
     }
-]
+
+    return [
+        ...baseColumns,
+        {
+            id: 'actions',
+            header: '',
+            cell: ({ row }) => {
+                const items: DropdownMenuItem[][] = [
+                    [
+                        {
+                            label: 'Edit',
+                            icon: 'i-lucide-pencil',
+                            onSelect: () => emit('edit', row.original)
+                        },
+                        {
+                            label: 'Kill Process',
+                            icon: 'i-lucide-circle-x',
+                            color: 'error',
+                            onSelect: () => emit('delete', row.original)
+                        }
+                    ]
+                ]
+
+                return h(resolveComponent('UDropdownMenu'), { items }, {
+                    default: () => h(resolveComponent('UButton'), {
+                        icon: 'i-lucide-ellipsis',
+                        color: 'neutral',
+                        variant: 'ghost'
+                    })
+                })
+            }
+        }
+    ]
+})
 </script>

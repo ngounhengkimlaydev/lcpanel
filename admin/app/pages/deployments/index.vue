@@ -9,11 +9,11 @@
             </div>
 
             <div class="flex gap-2">
-                <UButton icon="i-lucide-git-branch" color="neutral" variant="soft" to="/deployments/git">
-                    Git Repository
+                <UButton icon="i-lucide-refresh-ccw" color="neutral" variant="soft" @click="getDeployments()">
+                    Refresh
                 </UButton>
 
-                <UButton icon="i-lucide-rocket">
+                <UButton icon="i-lucide-rocket" to="/deployments/git">
                     New Deploy
                 </UButton>
             </div>
@@ -54,7 +54,8 @@
             </template>
 
             <div class="space-y-4">
-                <div v-for="app in filteredDeployments" :key="app.id" class="rounded-2xl border border-default p-4">
+                <div v-if="!loading" v-for="app in visibleDeployments" :key="app.id"
+                    class="rounded-2xl border border-default p-4">
                     <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                         <div class="flex items-start gap-4">
                             <div class="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -89,7 +90,8 @@
                         </div>
 
                         <div class="flex flex-wrap gap-2 lg:justify-end">
-                            <UButton icon="i-lucide-rocket" size="sm" :loading="app.status === 'deploying'">
+                            <UButton icon="i-lucide-rocket" size="sm" :loading="app.status === 'deploying'"
+                                @click="deployProject(app)">
                                 Deploy
                             </UButton>
 
@@ -107,7 +109,11 @@
                     <div class="mt-5 grid grid-cols-1 gap-4 border-t border-default pt-4 md:grid-cols-4">
                         <div>
                             <p class="text-xs text-muted">Domain</p>
-                            <p class="mt-1 text-sm font-medium text-highlighted">{{ app.domain }}</p>
+                            <p class="mt-1 text-sm font-medium  text-blue-500 hover:underline">
+                                <NuxtLink :to="app.domain">
+                                    {{ app.domain }}
+                                </NuxtLink>
+                            </p>
                         </div>
 
                         <div>
@@ -126,6 +132,56 @@
                         </div>
                     </div>
                 </div>
+                <div class="rounded-2xl border border-default p-4" v-else v-for="index in 2">
+                    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                        <div class="flex items-start gap-4">
+                            <USkeleton class="size-12 rounded-xl" />
+
+                            <div class="flex-1 space-y-3">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <USkeleton class="h-5 w-32" />
+                                    <USkeleton class="h-5 w-20 rounded-full" />
+                                </div>
+
+                                <USkeleton class="h-4 w-64 max-w-full" />
+
+                                <div class="flex flex-wrap gap-2">
+                                    <USkeleton class="h-5 w-20 rounded-full" />
+                                    <USkeleton class="h-5 w-16 rounded-full" />
+                                    <USkeleton class="h-5 w-24 rounded-full" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap gap-2 lg:justify-end">
+                            <USkeleton class="h-8 w-24 rounded-md" />
+                            <USkeleton class="h-8 w-20 rounded-md" />
+                            <USkeleton class="h-8 w-8 rounded-md" />
+                        </div>
+                    </div>
+
+                    <div class="mt-5 grid grid-cols-1 gap-4 border-t border-default pt-4 md:grid-cols-4">
+                        <div class="space-y-2">
+                            <USkeleton class="h-3 w-16" />
+                            <USkeleton class="h-4 w-36" />
+                        </div>
+
+                        <div class="space-y-2">
+                            <USkeleton class="h-3 w-20" />
+                            <USkeleton class="h-4 w-24" />
+                        </div>
+
+                        <div class="space-y-2">
+                            <USkeleton class="h-3 w-20" />
+                            <USkeleton class="h-4 w-28" />
+                        </div>
+
+                        <div class="space-y-2">
+                            <USkeleton class="h-3 w-18" />
+                            <USkeleton class="h-4 w-20" />
+                        </div>
+                    </div>
+                </div>
 
                 <div v-if="!filteredDeployments.length"
                     class="rounded-2xl border border-dashed border-default p-10 text-center">
@@ -139,6 +195,12 @@
                         Connect Git Repository
                     </UButton>
                 </div>
+
+                <div
+                    v-if="hasMoreDeployments"
+                    ref="loadMoreTrigger"
+                    class="h-1"
+                />
             </div>
         </UCard>
         <DeploymentDetailsModal v-model:open="detailOpen" :project="detailProject" @deploy="deployProject"
@@ -152,28 +214,12 @@
 <script lang="ts" setup>
 import DeploymentDetailsModal from '~/components/deployments/DeploymentDetailsModal.vue'
 import DeploymentSettingsModal from '~/components/deployments/DeploymentSettingsModal.vue'
+import type { Deployment, DeployStatus } from '~/types/deployments'
 
 definePageMeta({
     middleware: "alc",
     moduleKey: moduleKey.DEPLOY,
 })
-
-type DeployStatus = "success" | "deploying" | "failed" | "pending"
-
-interface Deployment {
-    id: number
-    name: string
-    description: string
-    framework: string
-    branch: string
-    environment: string
-    domain: string
-    commit: string
-    lastDeploy: string
-    buildTime: string
-    status: DeployStatus
-    icon: string
-}
 
 const search = ref("")
 const status = ref("all")
@@ -213,11 +259,15 @@ const stats = ref([
 ])
 
 const deployments = ref<Deployment[]>([])
+const deploymentPageSize = 8
+const visibleDeploymentCount = ref(deploymentPageSize)
+const loadMoreTrigger = ref<HTMLElement | null>(null)
 
 const settingOpen = ref(false)
 const selectedProject = ref<Deployment | null>(null)
 const detailOpen = ref(false)
 const detailProject = ref<Deployment | null>(null)
+const loading = ref<boolean>(false)
 
 function openSettings(app: Deployment) {
     selectedProject.value = app
@@ -226,11 +276,29 @@ function openSettings(app: Deployment) {
 
 onMounted(getDeployments)
 
-async function getDeployments() {
-    const res: any = await api.get('/deployments')
+watch([search, status], () => {
+    visibleDeploymentCount.value = deploymentPageSize
+})
 
-    deployments.value = res.data || []
-    stats.value = res.stats || stats.value
+useIntersectionObserver(loadMoreTrigger, ([entry]) => {
+    if (entry?.isIntersecting && hasMoreDeployments.value) {
+        visibleDeploymentCount.value += deploymentPageSize
+    }
+}, {
+    rootMargin: '240px',
+})
+
+async function getDeployments() {
+    loading.value = true
+    try {
+        const res: any = await api.get('/deployments')
+        deployments.value = res.data || []
+        stats.value = res.stats || stats.value
+        visibleDeploymentCount.value = deploymentPageSize
+    } catch (e) { } finally {
+        loading.value = false
+    }
+
 }
 
 async function updateProjectSettings(payload: any) {
@@ -327,6 +395,14 @@ const filteredDeployments = computed(() => {
         return matchSearch && matchStatus
     })
 })
+
+const visibleDeployments = computed(() =>
+    filteredDeployments.value.slice(0, visibleDeploymentCount.value)
+)
+
+const hasMoreDeployments = computed(() =>
+    visibleDeploymentCount.value < filteredDeployments.value.length
+)
 
 function getStatusColor(status: DeployStatus) {
     switch (status) {

@@ -51,4 +51,12 @@ export class ImportProjectDto {
   @IsString()
   @IsOptional()
   pm2Name?: string;
+
+  @IsString()
+  @IsOptional()
+  nodeVersion?: string;
+
+  @IsString()
+  @IsOptional()
+  phpVersion?: string;
 }

@@ -5,6 +5,7 @@ import net from "net";
 import { readdirSync, readFileSync, existsSync } from "fs";
 import { join } from "path";
 import { SiteInfo } from "./dto/server";
+import { mapPm2Process } from "./process.helper";
 import tls from "node:tls";
 @Injectable()
 export class ServerService {
@@ -222,6 +223,25 @@ export class ServerService {
     }
 
     return sites;
+  }
+
+  async getProcesses() {
+    if (process.platform !== "linux") {
+      return [];
+    }
+
+    try {
+      const output = await this.execAsync("pm2 jlist");
+      const processes = JSON.parse(output || "[]");
+
+      if (!Array.isArray(processes)) {
+        return [];
+      }
+
+      return processes.map(mapPm2Process);
+    } catch {
+      return [];
+    }
   }
 
   checkPortLocal = (port: number) =>

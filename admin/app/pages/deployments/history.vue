@@ -27,7 +27,8 @@
             </template>
 
             <div class="space-y-4">
-                <div v-for="item in filteredHistory" :key="item.id" class="rounded-2xl border border-default p-4">
+                <div v-if="!loading" v-for="item in visibleHistory" :key="item.id"
+                    class="rounded-2xl border border-default p-4">
                     <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                         <div class="flex gap-4">
                             <div class="mt-1 flex size-11 shrink-0 items-center justify-center rounded-xl"
@@ -73,7 +74,7 @@
 
                         <div class="flex flex-wrap gap-2 lg:justify-end">
                             <UButton icon="i-lucide-scroll-text" size="sm" color="neutral" variant="soft"
-                                to="/deployments/build-logs">
+                                :to="{ path: '/deployments/build-logs', query: { project: String(item.projectId) } }">
                                 Logs
                             </UButton>
 
@@ -111,6 +112,61 @@
                     </div>
                 </div>
 
+                <div v-else class="rounded-2xl border border-default p-4" v-for="index in 2">
+                    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                        <div class="flex gap-4">
+                            <USkeleton class="mt-1 size-11 shrink-0 rounded-xl" />
+
+                            <div class="flex-1 space-y-3">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <USkeleton class="h-5 w-32" />
+                                    <USkeleton class="h-5 w-20 rounded-full" />
+                                    <USkeleton class="h-5 w-24 rounded-full" />
+                                </div>
+
+                                <div class="space-y-2">
+                                    <USkeleton class="h-4 w-72 max-w-full" />
+                                    <USkeleton class="h-4 w-56 max-w-full" />
+                                </div>
+
+                                <div class="flex flex-wrap gap-2">
+                                    <USkeleton class="h-5 w-24 rounded-full" />
+                                    <USkeleton class="h-5 w-28 rounded-full" />
+                                    <USkeleton class="h-5 w-20 rounded-full" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap gap-2 lg:justify-end">
+                            <USkeleton class="h-8 w-20 rounded-md" />
+                            <USkeleton class="h-8 w-24 rounded-md" />
+                            <USkeleton class="h-8 w-8 rounded-md" />
+                        </div>
+                    </div>
+
+                    <div class="mt-5 grid grid-cols-1 gap-4 border-t border-default pt-4 md:grid-cols-4">
+                        <div class="space-y-2">
+                            <USkeleton class="h-3 w-14" />
+                            <USkeleton class="h-4 w-24" />
+                        </div>
+
+                        <div class="space-y-2">
+                            <USkeleton class="h-3 w-20" />
+                            <USkeleton class="h-4 w-32" />
+                        </div>
+
+                        <div class="space-y-2">
+                            <USkeleton class="h-3 w-16" />
+                            <USkeleton class="h-4 w-20" />
+                        </div>
+
+                        <div class="space-y-2">
+                            <USkeleton class="h-3 w-16" />
+                            <USkeleton class="h-4 w-40" />
+                        </div>
+                    </div>
+                </div>
+
                 <div v-if="!filteredHistory.length"
                     class="rounded-2xl border border-dashed border-default p-10 text-center">
                     <UIcon name="i-lucide-history" class="mx-auto mb-3 size-10 text-muted" />
@@ -119,33 +175,24 @@
                         Try changing your search or status filter.
                     </p>
                 </div>
+
+                <div
+                    v-if="hasMoreHistory"
+                    ref="loadMoreTrigger"
+                    class="h-1"
+                />
             </div>
         </UCard>
     </div>
 </template>
 
 <script lang="ts" setup>
+import type { DeployHistory, HistoryStatus } from '~/types/deploy-history'
+
 definePageMeta({
     middleware: "alc",
     moduleKey: moduleKey.GIT_HISTORY,
 })
-
-type HistoryStatus = "success" | "running" | "failed" | "cancelled"
-
-interface DeployHistory {
-    id: number
-    project: string
-    message: string
-    branch: string
-    commit: string
-    status: HistoryStatus
-    environment: string
-    author: string
-    deployedAt: string
-    duration: string
-    version: string
-    domain: string
-}
 
 const search = ref("")
 const status = ref("all")
@@ -161,13 +208,23 @@ const statusOptions = [
 const api = useApiFetch()
 const toast = useToast()
 const history = ref<DeployHistory[]>([])
+const loading = ref<boolean>(false)
+const historyPageSize = 8
+const visibleHistoryCount = ref(historyPageSize)
+const loadMoreTrigger = ref<HTMLElement | null>(null)
 
 onMounted(getHistory)
 
 async function getHistory() {
-    const res: any = await api.get('/deployments/history')
+    loading.value = true
+    try {
+        const res: any = await api.get('/deployments/history')
 
-    history.value = res.data || []
+        history.value = res.data || []
+        visibleHistoryCount.value = historyPageSize
+    } finally {
+        loading.value = false
+    }
 }
 
 const filteredHistory = computed(() => {
@@ -192,6 +249,26 @@ const filteredHistory = computed(() => {
 
         return matchSearch && matchStatus
     })
+})
+
+const visibleHistory = computed(() =>
+    filteredHistory.value.slice(0, visibleHistoryCount.value)
+)
+
+const hasMoreHistory = computed(() =>
+    visibleHistoryCount.value < filteredHistory.value.length
+)
+
+watch([search, status], () => {
+    visibleHistoryCount.value = historyPageSize
+})
+
+useIntersectionObserver(loadMoreTrigger, ([entry]) => {
+    if (entry?.isIntersecting && hasMoreHistory.value) {
+        visibleHistoryCount.value += historyPageSize
+    }
+}, {
+    rootMargin: '240px',
 })
 
 function getStatusColor(status: HistoryStatus) {
@@ -249,7 +326,10 @@ function getActions(item: DeployHistory) {
             {
                 label: "View Build Logs",
                 icon: "i-lucide-scroll-text",
-                to: "/deployments/build-logs",
+                to: {
+                    path: "/deployments/build-logs",
+                    query: { project: String(item.projectId) },
+                },
             },
         ],
         [
@@ -268,7 +348,7 @@ function getActions(item: DeployHistory) {
 }
 
 async function redeploy(item: DeployHistory) {
-    await api.post(`/deployments/projects/${item.id}/pull`, {
+    await api.post(`/deployments/projects/${item.projectId}/pull`, {
         install: true,
         build: true,
         restart: true,

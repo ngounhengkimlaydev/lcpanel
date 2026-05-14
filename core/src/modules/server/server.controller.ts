@@ -10,6 +10,7 @@ import { ServerGateway } from "./server.gateway";
 @Controller("server")
 export class ServerController {
   static MODULE_KEY = "dashboard";
+  static PROCESS_MODULE_KEY = "process";
 
   constructor(
     private readonly serverService: ServerService,
@@ -30,6 +31,18 @@ export class ServerController {
       sites,
     };
   }
+
+  @Get("processes")
+  @Permission(ServerController.PROCESS_MODULE_KEY, PermissionAction.VIEW)
+  async getProcesses() {
+    const data = await this.serverService.getProcesses();
+
+    return {
+      data,
+      total: data.length,
+    };
+  }
+
   onModuleInit() {
     setInterval(async () => {
       const stats = await this.getStats(); 

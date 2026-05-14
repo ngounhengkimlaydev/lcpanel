@@ -34,4 +34,6 @@ export interface GitImportForm {
   installCommand: string
   buildCommand: string
   outputDirectory: string
+  nodeVersion: string
+  phpVersion: string
 }

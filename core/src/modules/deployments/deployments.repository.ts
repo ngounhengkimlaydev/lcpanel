@@ -1,9 +1,11 @@
 // src/modules/deployments/deployments.repository.ts
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
-
-
-export type GitProvider = "github" | "gitlab";
+import type {
+  BuildLogStatus,
+  DeploymentTrigger,
+  GitProvider,
+} from "./types/deployment";
 
 type UpsertGitConnectionData = {
   provider: GitProvider;
@@ -37,9 +39,42 @@ type UpdateGitProjectData = {
   defaultBranch?: string | null;
 };
 
+type CreateDeploymentHistoryData = {
+  projectName: string;
+  branch: string;
+  status: BuildLogStatus;
+  trigger: DeploymentTrigger;
+  message: string;
+  environment?: string;
+  author?: string | null;
+  domain?: string | null;
+  planName?: string | null;
+};
+
+type UpdateDeploymentHistoryData = {
+  branch?: string;
+  commitHash?: string | null;
+  commitShort?: string | null;
+  commitMessage?: string | null;
+  author?: string | null;
+  status?: BuildLogStatus;
+  message?: string;
+  environment?: string;
+  domain?: string | null;
+  installTime?: string | null;
+  buildTime?: string | null;
+  deployTime?: string | null;
+  durationMs?: number | null;
+  planName?: string | null;
+};
+
 @Injectable()
 export class DeploymentsRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  private get deploymentHistoryModel(): any {
+    return (this.prisma as any).deploymentHistory;
+  }
 
   async upsertGitConnection(customerId: number, data: UpsertGitConnectionData) {
     return this.prisma.gitConnection.upsert({
@@ -249,5 +284,83 @@ export class DeploymentsRepository {
         id,
       },
     });
+  }
+
+  async createDeploymentHistory(
+    customerId: number,
+    projectId: number,
+    data: CreateDeploymentHistoryData,
+  ) {
+    return this.deploymentHistoryModel.create({
+      data: {
+        customer_id: customerId,
+        project_id: projectId,
+        project_name: data.projectName,
+        branch: data.branch,
+        status: data.status,
+        trigger: data.trigger,
+        message: data.message,
+        environment: data.environment ?? "Production",
+        author: data.author ?? null,
+        domain: data.domain ?? null,
+        plan_name: data.planName ?? null,
+      },
+    });
+  }
+
+  async updateDeploymentHistory(id: number, data: UpdateDeploymentHistoryData) {
+    return this.deploymentHistoryModel.update({
+      where: {
+        id,
+      },
+      data: {
+        branch: data.branch,
+        commit_hash: data.commitHash,
+        commit_short: data.commitShort,
+        commit_message: data.commitMessage,
+        author: data.author ?? undefined,
+        status: data.status,
+        message: data.message,
+        environment: data.environment,
+        domain: data.domain ?? undefined,
+        install_time: data.installTime ?? undefined,
+        build_time: data.buildTime ?? undefined,
+        deploy_time: data.deployTime ?? undefined,
+        duration_ms: data.durationMs ?? undefined,
+        plan_name: data.planName ?? undefined,
+      },
+    });
+  }
+
+  async getDeploymentHistories(customerId: number) {
+    return this.deploymentHistoryModel.findMany({
+      where: {
+        customer_id: customerId,
+      },
+      orderBy: {
+        created_at: "desc",
+      },
+    });
+  }
+
+  async getCurrentPlan(customerId: number) {
+    const customer = await this.prisma.customer.findUnique({
+      where: {
+        id: customerId,
+      },
+      select: {
+        subscription: {
+          select: {
+            plan: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return customer?.subscription?.plan ?? null;
   }
 }
