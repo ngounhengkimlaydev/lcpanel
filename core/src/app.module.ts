@@ -21,6 +21,8 @@ import { ServicesModule } from "./modules/services/services.module";
 import { DeploymentsModule } from "./modules/deployments/deployments.module";
 import { CustomerModule } from "./modules/customer/customer.module";
 import { PlansModule } from "./modules/plans/plans.module";
+import { SubscriptionsModule } from "./modules/subscriptions/subscriptions.module";
+import { InvoicesModule } from "./modules/invoices/invoices.module";
 
 // UsersModule
 @Module({
@@ -48,6 +50,8 @@ import { PlansModule } from "./modules/plans/plans.module";
     DeploymentsModule,
     CustomerModule,
     PlansModule,
+    SubscriptionsModule,
+    InvoicesModule,
   ],
   controllers: [AppController],
   providers: [AppService, Reflector],

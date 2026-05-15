@@ -82,6 +82,14 @@
 <script setup lang="ts">
 import type { Invoice } from '~/types'
 
+type InvoiceForm = {
+  id: string
+  customer: string
+  amount: string
+  status: string
+  due_date: string
+}
+
 const emit = defineEmits<{
   submit: [invoice: Invoice]
 }>()
@@ -95,7 +103,7 @@ const statusItems = [
   { label: 'Draft', value: 'draft' }
 ]
 
-const form = reactive<Invoice>({
+const form = reactive<InvoiceForm>({
   id: '',
   customer: '',
   amount: '',

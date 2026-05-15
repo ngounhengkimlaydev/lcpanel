@@ -15,9 +15,6 @@
         class="w-44"
         @update:model-value="$emit('update:status', String($event))"
       />
-
-      <UButton icon="i-lucide-filter" color="neutral" variant="outline" />
-      <UButton icon="i-lucide-download" color="neutral" variant="outline" />
     </div>
   </div>
 </template>
@@ -36,8 +33,7 @@ defineEmits<{
 const statusItems = [
   { label: 'All Status', value: 'all' },
   { label: 'Active', value: 'active' },
-  { label: 'Past Due', value: 'past_due' },
-  { label: 'Cancelled', value: 'cancelled' },
-  { label: 'Expired', value: 'expired' }
+  { label: 'Expired', value: 'expired' },
+  { label: 'Disabled', value: 'disabled' }
 ]
 </script>

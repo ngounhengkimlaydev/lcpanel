@@ -1,13 +1,21 @@
 <template>
     <UCard class="space-y-4 mt-5">
-        <UTable :data="paginatedData" :columns="columns" class=" h-screen" />
+        <UTable :data="data" :columns="columns" class="h-screen">
+            <template #empty>
+                <div v-if="!data.length" class="py-12 text-center">
+                    <UIcon name="i-lucide-receipt-text" class="mx-auto mb-3 size-10 text-muted" />
+                    <p class="font-medium text-highlighted">No invoices found</p>
+                    <p class="text-sm text-muted">Try changing your filter or search.</p>
+                </div>
+            </template>
+        </UTable>
 
-        <div v-if="paginatedData.length" class="flex items-center justify-between border-t border-default pt-4">
+        <div v-if="total" class="flex items-center justify-between border-t border-default pt-4">
             <p class="text-sm text-muted">
-                Showing {{ start + 1 }}-{{ end }} of {{ data.length }}
+                Showing {{ startItem }}-{{ endItem }} of {{ total }}
             </p>
 
-            <UPagination v-model:page="page" :total="data.length" :items-per-page="pageSize" />
+            <UPagination :page="page" :total="total" :items-per-page="pageSize" @update:page="emit('update:page', $event)" />
         </div>
     </UCard>
 </template>
@@ -19,37 +27,57 @@ import type { Invoice } from '~/types';
 
 const props = defineProps<{
     data: Invoice[]
+    total: number
+    page: number
+    pageSize: number
 }>()
 
 const emit = defineEmits<{
     view: [invoice: Invoice]
-    paid: [invoice: Invoice]
-    send: [invoice: Invoice]
     download: [invoice: Invoice]
-    delete: [invoice: Invoice]
+    'update:page': [page: number]
 }>()
 
-const page = ref(1)
-const pageSize = ref(10)
-
-const start = computed(() => (page.value - 1) * pageSize.value)
-const end = computed(() => Math.min(start.value + pageSize.value, props.data.length))
-
-const paginatedData = computed(() => {
-    return props.data.slice(start.value, end.value)
+const startItem = computed(() => {
+    if (!props.total) return 0
+    return (props.page - 1) * props.pageSize + 1
 })
 
-watch(
-    () => props.data.length,
-    () => {
-        page.value = 1
-    }
-)
+const endItem = computed(() => {
+    return Math.min(props.page * props.pageSize, props.total)
+})
+
+function formatCurrency(amount: Invoice['amount']) {
+    const numeric = typeof amount === 'number' ? amount : Number(amount)
+
+    if (Number.isNaN(numeric)) return String(amount)
+
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD'
+    }).format(numeric)
+}
+
+function getStatusKey(invoice: Invoice) {
+    if (invoice.status_key) return invoice.status_key
+    if (invoice.status === 1) return 'paid'
+    if (invoice.status === 2) return 'unpaid'
+    if (invoice.status === 3) return 'overdue'
+    return String(invoice.status).toLowerCase()
+}
 
 const columns: TableColumn<Invoice>[] = [
-    { accessorKey: 'id', header: 'Invoice ID' },
+    {
+        accessorKey: 'code',
+        header: 'Invoice ID',
+        cell: ({ row }) => h('span', { class: 'font-medium text-highlighted' }, row.original.code ?? row.original.id)
+    },
     { accessorKey: 'customer', header: 'Customer' },
-    { accessorKey: 'amount', header: 'Amount' },
+    {
+        accessorKey: 'amount',
+        header: 'Amount',
+        cell: ({ row }) => h('span', { class: 'font-medium text-highlighted' }, row.original.amount_formatted ?? formatCurrency(row.original.amount))
+    },
     {
         accessorKey: 'status',
         header: 'Status',
@@ -60,13 +88,15 @@ const columns: TableColumn<Invoice>[] = [
                 overdue: 'error',
                 draft: 'neutral'
             }
+            const statusKey = getStatusKey(row.original)
+            const label = row.original.status_label ?? statusKey
 
             return h(resolveComponent('UBadge'), {
-                color: colorMap[row.original.status] || 'neutral',
+                color: colorMap[statusKey] || 'neutral',
                 variant: 'soft',
                 class: 'capitalize'
             }, {
-                default: () => row.original.status
+                default: () => label
             })
         }
     },
@@ -85,29 +115,9 @@ const columns: TableColumn<Invoice>[] = [
                 ],
                 [
                     {
-                        label: 'Mark as Paid',
-                        icon: 'i-lucide-check-circle',
-                        onSelect: () => emit('paid', row.original)
-                    }
-                ],
-                [
-                    {
-                        label: 'Send Invoice',
-                        icon: 'i-lucide-send',
-                        onSelect: () => emit('send', row.original)
-                    },
-                    {
                         label: 'Download PDF',
                         icon: 'i-lucide-download',
                         onSelect: () => emit('download', row.original)
-                    }
-                ],
-                [
-                    {
-                        label: 'Delete',
-                        icon: 'i-lucide-trash',
-                        color: 'error',
-                        onSelect: () => emit('delete', row.original)
                     }
                 ]
             ]

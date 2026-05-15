@@ -1,19 +1,21 @@
 <template>
   <div class="mt-4 rounded-xl border border-default">
-    <UTable :data="paginatedSubscriptions" :columns="columns" class=" h-screen" />
+    <UTable :data="subscriptions" :columns="columns" class="h-screen">
+      <template #empty>
+        <div v-if="!subscriptions.length" class="py-12 text-center">
+          <UIcon name="i-lucide-credit-card" class="mx-auto mb-3 size-10 text-muted" />
+          <p class="font-medium text-highlighted">No subscriptions found</p>
+          <p class="text-sm text-muted">Try changing your filter or search.</p>
+        </div>
+      </template>
+    </UTable>
 
-    <div v-if="!subscriptions.length" class="py-12 text-center">
-      <UIcon name="i-lucide-credit-card" class="mx-auto mb-3 size-10 text-muted" />
-      <p class="font-medium text-highlighted">No subscriptions found</p>
-      <p class="text-sm text-muted">Try changing your filter or create a subscription.</p>
-    </div>
-
-    <div v-else class="flex items-center justify-between border-t border-default px-4 py-3">
+    <div v-if="total" class="flex items-center justify-between border-t border-default px-4 py-3">
       <p class="text-sm text-muted">
-        Showing {{ startItem }}-{{ endItem }} of {{ subscriptions.length }}
+        Showing {{ startItem }}-{{ endItem }} of {{ total }}
       </p>
 
-      <UPagination v-model:page="page" :items-per-page="pageSize" :total="subscriptions.length" />
+      <UPagination :page="page" :items-per-page="pageSize" :total="total" @update:page="emit('update:page', $event)" />
     </div>
   </div>
 </template>
@@ -25,39 +27,34 @@ import type { Subscription } from '~/types';
 
 const emit = defineEmits<{
   view: [subscription: Subscription]
-  renew: [subscription: Subscription]
-  'change-plan': [subscription: Subscription]
-  cancel: [subscription: Subscription]
+  'update:page': [page: number]
 }>()
 const props = defineProps<{
   subscriptions: Subscription[]
+  total: number
+  page: number
+  pageSize: number
 }>()
 
-const page = ref(1)
-const pageSize = ref(10)
-
-const paginatedSubscriptions = computed(() => {
-  const start = (page.value - 1) * pageSize.value
-  const end = start + pageSize.value
-
-  return props.subscriptions.slice(start, end)
-})
-
 const startItem = computed(() => {
-  if (!props.subscriptions.length) return 0
-  return (page.value - 1) * pageSize.value + 1
+  if (!props.total) return 0
+  return (props.page - 1) * props.pageSize + 1
 })
 
 const endItem = computed(() => {
-  return Math.min(page.value * pageSize.value, props.subscriptions.length)
+  return Math.min(props.page * props.pageSize, props.total)
 })
 
-watch(
-  () => props.subscriptions.length,
-  () => {
-    page.value = 1
-  }
-)
+function formatPrice(price: Subscription['price']) {
+  const numeric = typeof price === 'number' ? price : Number(price)
+
+  if (Number.isNaN(numeric)) return String(price)
+
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD'
+  }).format(numeric)
+}
 
 const columns: TableColumn<Subscription>[] = [
   {
@@ -69,12 +66,16 @@ const columns: TableColumn<Subscription>[] = [
       }, row.original.customer.charAt(0)),
       h('div', {}, [
         h('p', { class: 'font-medium text-highlighted' }, row.original.customer),
-        h('p', { class: 'text-sm text-muted' }, row.original.email)
+        h('p', { class: 'text-sm text-muted' }, row.original.email ?? '-')
       ])
     ])
   },
   { accessorKey: 'plan', header: 'Plan' },
-  { accessorKey: 'price', header: 'Price' },
+  {
+    accessorKey: 'price',
+    header: 'Price',
+    cell: ({ row }) => h('span', { class: 'font-medium text-highlighted' }, row.original.price_formatted ?? formatPrice(row.original.price))
+  },
   { accessorKey: 'websites', header: 'Websites' },
   { accessorKey: 'started_at', header: 'Start Date' },
   { accessorKey: 'expired_at', header: 'Expiry Date' },
@@ -82,7 +83,9 @@ const columns: TableColumn<Subscription>[] = [
     accessorKey: 'status',
     header: 'Status',
     cell: ({ row }) => h(resolveComponent('SubscriptionStatusBadge'), {
-      status: row.original.status
+      status: row.original.status,
+      statusKey: row.original.status_key,
+      statusLabel: row.original.status_label
     })
   },
   {
@@ -95,28 +98,6 @@ const columns: TableColumn<Subscription>[] = [
             label: 'View Details',
             icon: 'i-lucide-eye',
             onSelect: () => emit('view', row.original)
-          }
-        ],
-        [
-          {
-            label: 'Renew',
-            icon: 'i-lucide-refresh-cw',
-            onSelect: () => emit('renew', row.original)
-          }
-        ],
-        [
-          {
-            label: 'Change Plan',
-            icon: 'i-lucide-repeat',
-            onSelect: () => emit('change-plan', row.original)
-          }
-        ],
-        [
-          {
-            label: 'Cancel',
-            icon: 'i-lucide-ban',
-            color: 'error',
-            onSelect: () => emit('cancel', row.original)
           }
         ]
       ]

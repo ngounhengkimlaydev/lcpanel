@@ -6,16 +6,29 @@
 
 <script setup lang="ts">
 const props = defineProps<{
-  status: string
+  status: string | number
+  statusKey?: string
+  statusLabel?: string
 }>()
 
+const resolvedKey = computed(() => {
+  if (props.statusKey) return props.statusKey
+  if (props.status === 1) return 'active'
+  if (props.status === 2) return 'disabled'
+  if (props.status === 3) return 'overdue'
+  return String(props.status).toLowerCase()
+})
+
 const color = computed(() => {
-  if (props.status === 'active') return 'success'
-  if (props.status === 'past_due') return 'warning'
-  if (props.status === 'cancelled') return 'error'
-  if (props.status === 'expired') return 'neutral'
+  if (resolvedKey.value === 'active') return 'success'
+  if (resolvedKey.value === 'expired') return 'warning'
+  if (resolvedKey.value === 'disabled') return 'error'
+  if (resolvedKey.value === 'overdue') return 'error'
   return 'info'
 })
 
-const label = computed(() => props.status.replaceAll('_', ' '))
+const label = computed(() => {
+  if (props.statusLabel) return props.statusLabel
+  return resolvedKey.value.replaceAll('_', ' ')
+})
 </script>

@@ -51,20 +51,20 @@ const stats = computed(() => {
       icon: 'i-lucide-shield-check',
       color: 'text-info'
     },
-    {
-      label: 'Monthly Revenue',
-      value: formatPlanCurrency(monthlyRevenue),
-      caption: 'Potential recurring revenue',
-      icon: 'i-lucide-credit-card',
-      color: 'text-success'
-    },
-    {
-      label: 'Avg. Plan Price',
-      value: formatPlanCurrency(averagePlanPrice),
-      caption: 'Across all plans',
-      icon: 'i-lucide-chart-no-axes-column',
-      color: 'text-warning'
-    }
+    // {
+    //   label: 'Monthly Revenue',
+    //   value: formatPlanCurrency(monthlyRevenue),
+    //   caption: 'Potential recurring revenue',
+    //   icon: 'i-lucide-credit-card',
+    //   color: 'text-success'
+    // },
+    // {
+    //   label: 'Avg. Plan Price',
+    //   value: formatPlanCurrency(averagePlanPrice),
+    //   caption: 'Across all plans',
+    //   icon: 'i-lucide-chart-no-axes-column',
+    //   color: 'text-warning'
+    // }
   ]
 })
 </script>

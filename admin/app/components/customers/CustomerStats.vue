@@ -34,19 +34,19 @@ const stats = [
     icon: 'i-lucide-user-check',
     color: 'text-success'
   },
-  {
-    label: 'Suspended',
-    value: '9',
-    caption: 'Need review',
-    icon: 'i-lucide-user-x',
-    color: 'text-warning'
-  },
-  {
-    label: 'Monthly Revenue',
-    value: '$2,480',
-    caption: '+18.4% growth',
-    icon: 'i-lucide-credit-card',
-    color: 'text-info'
-  }
+  // {
+  //   label: 'Suspended',
+  //   value: '9',
+  //   caption: 'Need review',
+  //   icon: 'i-lucide-user-x',
+  //   color: 'text-warning'
+  // },
+  // {
+  //   label: 'Monthly Revenue',
+  //   value: '$2,480',
+  //   caption: '+18.4% growth',
+  //   icon: 'i-lucide-credit-card',
+  //   color: 'text-info'
+  // }
 ]
 </script>

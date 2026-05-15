@@ -148,24 +148,98 @@ export type Plan = {
   updated_at: string;
 };
 
+export type SubscriptionStatusKey = "active" | "expired" | "disabled";
+
+export type SubscriptionInvoiceSummary = {
+  id: number;
+  code: string;
+  status: number | string;
+  due_date: string;
+  created_at: string;
+};
+
 export type Subscription = {
   id: number;
+  customer_id?: number;
+  plan_id?: number;
   customer: string;
-  email: string;
+  email: string | null;
+  phone?: string | null;
   plan: string;
-  price: string;
-  status: string;
+  price: number | string;
+  price_formatted?: string;
+  status: number | string;
+  status_key?: SubscriptionStatusKey;
+  status_label?: string;
   started_at: string;
   expired_at: string;
   websites: number;
+  storage?: number;
+  created_at?: string;
+  updated_at?: string;
+  customer_details?: {
+    id: number;
+    name: string;
+    email: string | null;
+    phone: string | null;
+  } | null;
+  plan_details?: {
+    id: number;
+    name: string;
+    price: number | string;
+    price_formatted?: string;
+    websites: number;
+    storage: number;
+    bandwidth: number;
+    database: number;
+    domain: number;
+    ssl: boolean;
+  } | null;
+  invoices?: SubscriptionInvoiceSummary[];
 };
 
+export type InvoiceStatusKey = "paid" | "unpaid" | "overdue" | "unknown";
+
 export type Invoice = {
-  id: string;
+  id: number | string;
+  code?: string;
+  customer_id?: number;
+  subscription_id?: number;
   customer: string;
-  amount: string;
-  status: string;
+  customer_email?: string | null;
+  customer_phone?: string | null;
+  amount: number | string;
+  amount_formatted?: string;
+  status: number | string;
+  status_key?: InvoiceStatusKey;
+  status_label?: string;
   due_date: string;
+  created_at?: string;
+  updated_at?: string;
+  subscription?: {
+    id: number;
+    started_at: string;
+    expired_at: string;
+    status: number | string;
+  } | null;
+  customer_details?: {
+    id: number;
+    name: string;
+    email: string | null;
+    phone: string | null;
+  } | null;
+  plan_details?: {
+    id: number;
+    name: string;
+    price: number | string;
+    price_formatted?: string;
+    websites: number;
+    storage: number;
+    bandwidth: number;
+    database: number;
+    domain: number;
+    ssl: boolean;
+  } | null;
 };
 
 export type Role = {
