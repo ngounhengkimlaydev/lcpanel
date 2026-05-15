@@ -466,30 +466,20 @@ export class DeployService {
   }
 
   private async runImportPipeline(input: ImportPipelineInput) {
+    let branch = input.branch;
     const manifest = this.createDeploymentManifest(
       input.projectName,
-      input.branch,
+      branch,
       input.dto,
     );
 
     try {
       if (!existsSync(input.projectPath)) {
-        this.appendBuildLog(
+        branch = await this.cloneRepositorySource(
           input.projectId,
-          `Cloning repository source for ${input.branch}.`,
-        );
-
-        await this.run(
-          "git",
-          [
-            "clone",
-            "--branch",
-            input.branch,
-            "--depth",
-            "1",
-            input.cloneUrl,
-            input.projectPath,
-          ],
+          input.cloneUrl,
+          input.projectPath,
+          branch,
         );
       } else {
         if (!existsSync(join(input.projectPath, ".git"))) {
@@ -500,13 +490,18 @@ export class DeployService {
 
         this.appendBuildLog(
           input.projectId,
-          `Project folder already exists. Pulling latest code from ${input.branch}.`,
+          `Project folder already exists. Pulling latest code from ${branch}.`,
         );
-        await this.pullGitCode(
+        branch = await this.pullGitCode(
           input.projectId,
           input.projectPath,
-          input.branch,
+          branch,
         );
+      }
+
+      if (manifest.branch !== branch) {
+        manifest.branch = branch;
+        this.updateBuildLogBranch(input.projectId, branch);
       }
 
       this.writeDeploymentManifest(input.projectPath, manifest);
@@ -550,7 +545,7 @@ export class DeployService {
         {
           status: "imported",
           localPath: input.projectPath,
-          defaultBranch: input.branch,
+          defaultBranch: branch,
           lastPulledAt: new Date(),
         },
       );
@@ -581,20 +576,30 @@ export class DeployService {
   }
 
   private async runPullPipeline(input: PullPipelineInput) {
+    let branch = input.branch;
+    let nextManifest = input.manifest;
+
     try {
-      if (input.manifest) {
-        this.appendRuntimePreferences(input.projectId, input.manifest);
+      if (nextManifest) {
+        this.appendRuntimePreferences(input.projectId, nextManifest);
       }
 
-      await this.pullGitCode(input.projectId, input.projectPath, input.branch);
+      branch = await this.pullGitCode(input.projectId, input.projectPath, branch);
 
-      if (input.dto.install && input.manifest?.installCommand) {
+      if (nextManifest && nextManifest.branch !== branch) {
+        nextManifest.branch = branch;
+        this.updateBuildLogBranch(input.projectId, branch);
+      }
+
+      if (input.dto.install && nextManifest?.installCommand) {
+        const manifest = nextManifest;
+
         await this.runBuildStage(input.projectId, "install", async () => {
           await this.runCommandString(
-            input.manifest!.installCommand!,
+            manifest.installCommand!,
             input.buildPath,
             (chunk) => this.appendBuildLog(input.projectId, chunk),
-            this.getBuildEnvOverrides(input.manifest!),
+            this.getBuildEnvOverrides(manifest),
           );
         });
       } else if (input.dto.install) {
@@ -604,13 +609,15 @@ export class DeployService {
         );
       }
 
-      if (input.dto.build && input.manifest?.buildCommand) {
+      if (input.dto.build && nextManifest?.buildCommand) {
+        const manifest = nextManifest;
+
         await this.runBuildStage(input.projectId, "build", async () => {
           await this.runCommandString(
-            input.manifest!.buildCommand!,
+            manifest.buildCommand!,
             input.buildPath,
             (chunk) => this.appendBuildLog(input.projectId, chunk),
-            this.getBuildEnvOverrides(input.manifest!),
+            this.getBuildEnvOverrides(manifest),
           );
         });
       } else if (input.dto.build) {
@@ -619,8 +626,6 @@ export class DeployService {
           "Skipped build step because no saved build command was found.",
         );
       }
-
-      let nextManifest = input.manifest;
 
       if (
         nextManifest &&
@@ -648,10 +653,18 @@ export class DeployService {
         {
           status: "pulled",
           localPath: input.projectPath,
-          defaultBranch: input.branch,
+          defaultBranch: branch,
           lastPulledAt: new Date(),
         },
       );
+
+      if (nextManifest && nextManifest.branch !== branch) {
+        nextManifest.branch = branch;
+      }
+
+      if (nextManifest) {
+        this.writeDeploymentManifest(input.projectPath, nextManifest);
+      }
 
       if (nextManifest) {
         this.appendBuildLog(
@@ -832,7 +845,10 @@ export class DeployService {
       return;
     }
 
-    const lines = chunk.replace(/\r/g, "").split("\n");
+    const lines = chunk
+      .replace(/\r\n/g, "\n")
+      .replace(/\r/g, "\n")
+      .split("\n");
 
     for (const line of lines) {
       if (!line.trim()) {
@@ -846,6 +862,19 @@ export class DeployService {
 
     entry.updatedAt = new Date();
     this.persistBuildLog(entry);
+  }
+
+  private updateBuildLogBranch(projectId: number, branch: string) {
+    const entry = this.buildLogs.get(projectId);
+
+    if (!entry || entry.branch === branch) {
+      return;
+    }
+
+    entry.branch = branch;
+    entry.updatedAt = new Date();
+    this.persistBuildLog(entry);
+    this.emitBuildLogSnapshot(entry);
   }
 
   private async runBuildStage(
@@ -1780,12 +1809,43 @@ export class DeployService {
     projectId: number,
     projectPath: string,
     branch: string,
-  ) {
+  ): Promise<string> {
     this.appendBuildLog(projectId, `Syncing latest source from ${branch}.`);
-    await this.run("git", ["fetch", "origin", branch], projectPath);
-    await this.run("git", ["checkout", branch], projectPath);
-    await this.run("git", ["reset", "--hard", `origin/${branch}`], projectPath);
-    this.appendBuildLog(projectId, "Source sync completed.");
+
+    try {
+      await this.run("git", ["fetch", "origin", branch], projectPath);
+      await this.run("git", ["checkout", branch], projectPath);
+      await this.run("git", ["reset", "--hard", `origin/${branch}`], projectPath);
+      this.appendBuildLog(projectId, "Source sync completed.");
+      return branch;
+    } catch (error) {
+      if (!this.isMissingRemoteBranchError(error)) {
+        throw error;
+      }
+
+      const remoteUrl = this.readGitRemoteUrl(projectPath);
+      const fallbackBranch = remoteUrl
+        ? this.resolveRemoteDefaultBranch(remoteUrl)
+        : null;
+
+      if (!fallbackBranch || fallbackBranch === branch) {
+        throw error;
+      }
+
+      this.appendBuildLog(
+        projectId,
+        `Branch "${branch}" was not found on origin. Falling back to "${fallbackBranch}".`,
+      );
+      await this.run("git", ["fetch", "origin", fallbackBranch], projectPath);
+      await this.run("git", ["checkout", "-B", fallbackBranch, `origin/${fallbackBranch}`], projectPath);
+      await this.run(
+        "git",
+        ["reset", "--hard", `origin/${fallbackBranch}`],
+        projectPath,
+      );
+      this.appendBuildLog(projectId, "Source sync completed.");
+      return fallbackBranch;
+    }
   }
 
   private async restartPm2(pm2Name: string) {
@@ -1822,7 +1882,27 @@ export class DeployService {
       );
     }
 
-    return this.run(parsed.command, parsed.args, cwd, onOutput, envOverrides);
+    return this.run(
+      parsed.command,
+      this.normalizeCommandArgs(parsed.command, parsed.args),
+      cwd,
+      onOutput,
+      envOverrides,
+    );
+  }
+
+  private normalizeCommandArgs(command: string, args: string[]) {
+    if (command !== "pnpm") {
+      return args;
+    }
+
+    const hasReporter = args.some((arg) => arg.startsWith("--reporter"));
+
+    if (hasReporter) {
+      return args;
+    }
+
+    return ["--reporter=append-only", ...args];
   }
 
   private getBuildEnvOverrides(manifest: DeploymentManifest) {
@@ -1958,11 +2038,13 @@ export class DeployService {
   }
 
   private safeBranchName(branch: string) {
-    if (!/^[a-zA-Z0-9._/-]+$/.test(branch)) {
+    const value = String(branch || "").trim();
+
+    if (!/^[a-zA-Z0-9._/-]+$/.test(value)) {
       throw new BadRequestException("Invalid branch name");
     }
 
-    return branch;
+    return value;
   }
 
   private safePm2Name(name: string) {
@@ -1988,6 +2070,117 @@ export class DeployService {
     if (!target.startsWith(base)) {
       throw new BadRequestException("Invalid path");
     }
+  }
+
+  private async cloneRepositorySource(
+    projectId: number,
+    cloneUrl: string,
+    projectPath: string,
+    branch: string,
+  ) {
+    this.appendBuildLog(
+      projectId,
+      `Cloning repository source for ${branch}.`,
+    );
+
+    try {
+      await this.run(
+        "git",
+        [
+          "clone",
+          "--branch",
+          branch,
+          "--depth",
+          "1",
+          cloneUrl,
+          projectPath,
+        ],
+      );
+      return branch;
+    } catch (error) {
+      if (!this.isMissingRemoteBranchError(error)) {
+        throw error;
+      }
+
+      this.cleanupFailedClone(projectPath);
+
+      const fallbackBranch = this.resolveRemoteDefaultBranch(cloneUrl);
+
+      if (!fallbackBranch || fallbackBranch === branch) {
+        throw error;
+      }
+
+      this.appendBuildLog(
+        projectId,
+        `Branch "${branch}" was not found on origin. Falling back to "${fallbackBranch}".`,
+      );
+      await this.run(
+        "git",
+        [
+          "clone",
+          "--branch",
+          fallbackBranch,
+          "--depth",
+          "1",
+          cloneUrl,
+          projectPath,
+        ],
+      );
+      return fallbackBranch;
+    }
+  }
+
+  private cleanupFailedClone(projectPath: string) {
+    if (!existsSync(projectPath)) {
+      return;
+    }
+
+    rmSync(projectPath, { recursive: true, force: true });
+  }
+
+  private resolveRemoteDefaultBranch(remoteUrl: string) {
+    const result = spawnSync(
+      "git",
+      ["ls-remote", "--symref", remoteUrl, "HEAD"],
+      {
+        encoding: "utf8",
+      },
+    );
+
+    if (result.status !== 0) {
+      return null;
+    }
+
+    const match = result.stdout.match(/ref:\s+refs\/heads\/([^\s]+)\s+HEAD/);
+
+    return match?.[1] || null;
+  }
+
+  private readGitRemoteUrl(projectPath: string) {
+    const result = spawnSync(
+      "git",
+      ["remote", "get-url", "origin"],
+      {
+        cwd: projectPath,
+        encoding: "utf8",
+      },
+    );
+
+    if (result.status !== 0) {
+      return null;
+    }
+
+    return result.stdout.trim() || null;
+  }
+
+  private isMissingRemoteBranchError(error: unknown) {
+    if (!(error instanceof Error)) {
+      return false;
+    }
+
+    return /remote branch .* not found|couldn't find remote ref/i.test(
+      error.message,
+    );
   }
 
   private detectFramework(language?: string) {
