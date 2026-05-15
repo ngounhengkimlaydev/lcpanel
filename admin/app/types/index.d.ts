@@ -117,29 +117,33 @@ export type Customer = {
   created_at: string;
 };
 
+export type PlanStatus = 0 | 1 | 2;
+
 export type Plan = {
   id: number;
   name: string;
+  description: string;
   price: number;
-  status: string;
-  customers: number;
-  disk: string;
-  bandwidth: string;
-  domains: number;
-  databases: number;
-  emails: number;
+  status: PlanStatus;
+  type: number;
+  cpu?: number;
+  ram?: number;
+  disk_space: number;
+  bandwidth: number;
+  domain: number;
+  website: number;
+  database: number;
+  email?: number;
   ssl: boolean;
-};
-
-export type Customer = {
-  id: number;
-  name: string;
-  email: string;
-  plan: string;
-  websites: number;
-  storage: string;
-  status: string;
+  ftp_account?: number;
+  cronjob?: number;
+  backup?: boolean;
+  cdn?: boolean;
+  staging?: boolean;
+  ssh_access?: boolean;
+  docker_support?: boolean;
   created_at: string;
+  updated_at: string;
 };
 
 export type Subscription = {
@@ -208,19 +212,6 @@ export type ServerStats = {
   diskUsed: number;
   diskTotal: number;
   timestamp: string;
-};
-export type Plan = {
-  id: number;
-  name: string;
-  price: number;
-  status: string;
-  customers: number;
-  disk: string;
-  bandwidth: string;
-  domains: number;
-  databases: number;
-  emails: number;
-  ssl: boolean;
 };
 export type SystemServiceStatus = "running" | "stopped" | "failed" | "unknown";
 

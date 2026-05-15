@@ -296,7 +296,7 @@ export class DeployService {
         dto.provider,
       );
 
-      connectionId = connection.id;
+      connectionId = Number(connection.id);
       token = connection.access_token;
     }
 

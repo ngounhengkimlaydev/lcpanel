@@ -127,7 +127,7 @@ CREATE TABLE "user_log" (
 
 -- CreateTable
 CREATE TABLE "git_connection" (
-    "id" SERIAL NOT NULL,
+    "id" BIGSERIAL NOT NULL,
     "customer_id" BIGINT NOT NULL,
     "provider" TEXT NOT NULL,
     "provider_user_id" TEXT NOT NULL,
@@ -148,7 +148,7 @@ CREATE TABLE "git_connection" (
 CREATE TABLE "git_project" (
     "id" SERIAL NOT NULL,
     "customer_id" BIGINT NOT NULL,
-    "connection_id" INTEGER,
+    "connection_id" BIGINT,
     "provider" TEXT NOT NULL,
     "provider_repo_id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -167,11 +167,38 @@ CREATE TABLE "git_project" (
 );
 
 -- CreateTable
+CREATE TABLE "deployment_history" (
+    "id" SERIAL NOT NULL,
+    "customer_id" BIGINT NOT NULL,
+    "project_id" INTEGER NOT NULL,
+    "project_name" TEXT NOT NULL,
+    "branch" TEXT NOT NULL,
+    "commit_hash" TEXT,
+    "commit_short" TEXT,
+    "commit_message" TEXT,
+    "author" TEXT,
+    "status" TEXT NOT NULL,
+    "trigger" TEXT NOT NULL,
+    "message" TEXT NOT NULL,
+    "environment" TEXT NOT NULL DEFAULT 'Production',
+    "domain" TEXT,
+    "install_time" TEXT,
+    "build_time" TEXT,
+    "deploy_time" TEXT,
+    "duration_ms" INTEGER,
+    "plan_name" TEXT,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "deployment_history_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "plans" (
     "id" SERIAL NOT NULL,
     "name" VARCHAR(50) NOT NULL,
     "description" TEXT NOT NULL,
-    "price" DOUBLE PRECISION NOT NULL,
+    "price" DECIMAL(10,2) NOT NULL,
     "cpu" DOUBLE PRECISION,
     "ram" INTEGER,
     "disk_space" INTEGER NOT NULL,
@@ -179,6 +206,14 @@ CREATE TABLE "plans" (
     "email" INTEGER,
     "ssl" BOOLEAN NOT NULL DEFAULT true,
     "database" INTEGER NOT NULL,
+    "website" INTEGER NOT NULL DEFAULT 1,
+    "ftp_account" INTEGER DEFAULT 1,
+    "cronjob" INTEGER DEFAULT 0,
+    "backup" BOOLEAN DEFAULT false,
+    "cdn" BOOLEAN DEFAULT false,
+    "staging" BOOLEAN DEFAULT false,
+    "ssh_access" BOOLEAN DEFAULT false,
+    "docker_support" BOOLEAN DEFAULT false,
     "bandwidth" DOUBLE PRECISION NOT NULL,
     "type" SMALLINT NOT NULL,
     "status" INTEGER NOT NULL DEFAULT 1,
@@ -190,7 +225,7 @@ CREATE TABLE "plans" (
 
 -- CreateTable
 CREATE TABLE "subscriptions" (
-    "id" SERIAL NOT NULL,
+    "id" BIGSERIAL NOT NULL,
     "customer_id" BIGINT NOT NULL,
     "plan_id" INTEGER NOT NULL,
     "start_date" TIMESTAMP(3) NOT NULL,
@@ -204,10 +239,10 @@ CREATE TABLE "subscriptions" (
 
 -- CreateTable
 CREATE TABLE "invoices" (
-    "id" SERIAL NOT NULL,
+    "id" BIGSERIAL NOT NULL,
     "code" VARCHAR(50) NOT NULL,
     "customer_id" BIGINT NOT NULL,
-    "subscription_id" INTEGER NOT NULL,
+    "subscription_id" BIGINT NOT NULL,
     "status" INTEGER NOT NULL DEFAULT 1,
     "due_date" TIMESTAMP(3) NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -268,6 +303,12 @@ CREATE INDEX "git_project_customer_id_connection_id_idx" ON "git_project"("custo
 CREATE UNIQUE INDEX "git_project_customer_id_provider_provider_repo_id_key" ON "git_project"("customer_id", "provider", "provider_repo_id");
 
 -- CreateIndex
+CREATE INDEX "idx_deployment_history_customer_created_at" ON "deployment_history"("customer_id", "created_at");
+
+-- CreateIndex
+CREATE INDEX "idx_deployment_history_project_created_at" ON "deployment_history"("project_id", "created_at");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "subscriptions_customer_id_key" ON "subscriptions"("customer_id");
 
 -- CreateIndex
@@ -314,6 +355,12 @@ ALTER TABLE "git_project" ADD CONSTRAINT "git_project_connection_id_fkey" FOREIG
 
 -- AddForeignKey
 ALTER TABLE "git_project" ADD CONSTRAINT "git_project_customer_id_fkey" FOREIGN KEY ("customer_id") REFERENCES "customer"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "deployment_history" ADD CONSTRAINT "deployment_history_customer_id_fkey" FOREIGN KEY ("customer_id") REFERENCES "customer"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "deployment_history" ADD CONSTRAINT "deployment_history_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "git_project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "subscriptions" ADD CONSTRAINT "subscriptions_customer_id_fkey" FOREIGN KEY ("customer_id") REFERENCES "customer"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

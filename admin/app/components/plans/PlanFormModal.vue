@@ -1,74 +1,134 @@
 <template>
-  <UModal v-model:open="open">
-    <template #content>
-      <UCard>
-        <template #header>
-          <h3 class="text-lg font-bold text-highlighted">
-            {{ type === 'create' ? 'Create Plan' : 'Edit Plan' }}
-          </h3>
-        </template>
+  <UModal v-model:open="open" :ui="{
+    content: 'max-w-2xl'
+  }">
+    <template #header>
+      <h3 class="text-lg font-bold text-highlighted">
+        {{ type === 'create' ? 'Create Plan' : 'Edit Plan' }}
+      </h3>
+    </template>
 
-        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <UFormField label="Plan Name">
-            <UInput v-model="form.name" class="w-full" />
+    <template #body>
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <UFormField label="Plan Name" required>
+          <UInput v-model="form.name" class="w-full" />
+        </UFormField>
+
+        <UFormField label="Plan Type" required>
+          <USelect v-model="form.type" :items="typeItems" class="w-full" />
+        </UFormField>
+
+        <UFormField label="Description" class="md:col-span-2" required>
+          <UTextarea v-model="form.description" :rows="3" class="w-full" />
+        </UFormField>
+
+        <UFormField label="Price ($)" required>
+          <UInput v-model.number="form.price" type="number" min="0" step="0.01" class="w-full" />
+        </UFormField>
+
+        <UFormField label="Status">
+          <USelect v-model="form.status" :items="statusItems" class="w-full" />
+        </UFormField>
+
+        <UFormField label="Disk Space (MB)" required>
+          <UInput v-model.number="form.disk_space" type="number" min="0" class="w-full" />
+        </UFormField>
+
+        <UFormField label="Bandwidth (GB)" required>
+          <UInput v-model.number="form.bandwidth" type="number" min="0" step="0.5" class="w-full" />
+        </UFormField>
+
+        <UFormField label="Domains" required>
+          <UInput v-model.number="form.domain" type="number" class="w-full" />
+        </UFormField>
+
+        <UFormField label="Websites">
+          <UInput v-model.number="form.website" type="number" min="0" class="w-full" />
+        </UFormField>
+
+        <UFormField label="Databases" required>
+          <UInput v-model.number="form.database" type="number" class="w-full" />
+        </UFormField>
+
+        <UFormField label="Emails">
+          <UInput v-model.number="form.email" type="number" min="0" class="w-full" />
+        </UFormField>
+
+        <UFormField label="CPU Cores">
+          <UInput v-model.number="form.cpu" type="number" min="0" step="0.1" class="w-full" />
+        </UFormField>
+
+        <UFormField label="RAM (MB)">
+          <UInput v-model.number="form.ram" type="number" min="0" class="w-full" />
+        </UFormField>
+
+        <UFormField label="FTP Accounts">
+          <UInput v-model.number="form.ftp_account" type="number" min="0" class="w-full" />
+        </UFormField>
+
+        <UFormField label="Cron Jobs">
+          <UInput v-model.number="form.cronjob" type="number" min="0" class="w-full" />
+        </UFormField>
+
+        <div class="grid grid-cols-1 gap-4 md:col-span-2 md:grid-cols-2 xl:grid-cols-3">
+          <UFormField label="Free SSL" class="rounded-xl border border-default px-4 py-3">
+            <div class="flex items-center justify-between gap-3">
+              <p class="text-sm text-muted">Include free SSL certificate</p>
+              <USwitch v-model="form.ssl" />
+            </div>
           </UFormField>
 
-          <UFormField label="Price">
-            <UInput v-model.number="form.price" type="number" class="w-full" />
+          <UFormField label="Backup" class="rounded-xl border border-default px-4 py-3">
+            <div class="flex items-center justify-between gap-3">
+              <p class="text-sm text-muted">Automatic backup access</p>
+              <USwitch v-model="form.backup" />
+            </div>
           </UFormField>
 
-          <UFormField label="Status">
-            <USelect v-model="form.status" :items="statuses" class="w-full" />
+          <UFormField label="CDN" class="rounded-xl border border-default px-4 py-3">
+            <div class="flex items-center justify-between gap-3">
+              <p class="text-sm text-muted">Content delivery network</p>
+              <USwitch v-model="form.cdn" />
+            </div>
           </UFormField>
 
-          <UFormField label="Disk Space">
-            <UInput v-model="form.disk" class="w-full" />
+          <UFormField label="Staging" class="rounded-xl border border-default px-4 py-3">
+            <div class="flex items-center justify-between gap-3">
+              <p class="text-sm text-muted">Staging environment</p>
+              <USwitch v-model="form.staging" />
+            </div>
           </UFormField>
 
-          <UFormField label="Bandwidth">
-            <UInput v-model="form.bandwidth" class="w-full" />
+          <UFormField label="SSH Access" class="rounded-xl border border-default px-4 py-3">
+            <div class="flex items-center justify-between gap-3">
+              <p class="text-sm text-muted">Terminal and deploy access</p>
+              <USwitch v-model="form.ssh_access" />
+            </div>
           </UFormField>
 
-          <UFormField label="Domains">
-            <UInput v-model.number="form.domains" type="number" class="w-full" />
-          </UFormField>
-
-          <UFormField label="Databases">
-            <UInput v-model.number="form.databases" type="number" class="w-full" />
-          </UFormField>
-
-          <UFormField label="Emails">
-            <UInput v-model.number="form.emails" type="number" class="w-full" />
-          </UFormField>
-
-          <UFormField label="Free SSL">
-            <USwitch v-model="form.ssl" />
+          <UFormField label="Docker Support" class="rounded-xl border border-default px-4 py-3">
+            <div class="flex items-center justify-between gap-3">
+              <p class="text-sm text-muted">Container-based workloads</p>
+              <USwitch v-model="form.docker_support" />
+            </div>
           </UFormField>
         </div>
+      </div>
+    </template>
 
-        <template #footer>
-          <div class="flex justify-end gap-2">
-            <UButton
-              label="Cancel"
-              color="neutral"
-              variant="ghost"
-              @click="open = false"
-            />
+    <template #footer>
+      <div class="flex justify-end gap-2">
+        <UButton label="Cancel" color="neutral" variant="ghost" @click="open = false" />
 
-            <UButton
-              :label="type === 'create' ? 'Create Plan' : 'Save Changes'"
-              icon="i-lucide-save"
-              @click="submit"
-            />
-          </div>
-        </template>
-      </UCard>
+        <UButton :label="type === 'create' ? 'Create Plan' : 'Save Changes'" icon="i-lucide-save" @click="submit" />
+      </div>
     </template>
   </UModal>
 </template>
 
 <script setup lang="ts">
-import type { Plan } from '~/types';
+import type { Plan } from '~/types'
+import { createDefaultPlan, planStatusItems, planTypeItems } from '~/utils/plan'
 
 const props = defineProps<{
   type: 'create' | 'edit'
@@ -81,21 +141,14 @@ const emit = defineEmits<{
 
 const open = defineModel<boolean>('open', { default: false })
 
-const statuses = ['active', 'draft', 'disabled']
+const statusItems = planStatusItems
+const typeItems = planTypeItems
 
-const form = reactive<Plan>({
-  id: 0,
-  name: '',
-  price: 0,
-  status: 'active',
-  customers: 0,
-  disk: '',
-  bandwidth: '',
-  domains: 1,
-  databases: 1,
-  emails: 1,
-  ssl: true
-})
+const form = reactive<Plan>(createDefaultPlan())
+
+function resetForm() {
+  Object.assign(form, createDefaultPlan())
+}
 
 watch(
   () => open.value,
@@ -103,26 +156,18 @@ watch(
     if (!value) return
 
     if (props.type === 'edit' && props.plan) {
-      Object.assign(form, props.plan)
+      Object.assign(form, createDefaultPlan(), props.plan)
     } else {
-      Object.assign(form, {
-        id: 0,
-        name: '',
-        price: 0,
-        status: 'active',
-        customers: 0,
-        disk: '',
-        bandwidth: '',
-        domains: 1,
-        databases: 1,
-        emails: 1,
-        ssl: true
-      })
+      resetForm()
     }
   }
 )
 
 function submit() {
-  emit('submit', { ...form })
+  emit('submit', {
+    ...form,
+    name: form.name.trim(),
+    description: form.description.trim()
+  })
 }
 </script>

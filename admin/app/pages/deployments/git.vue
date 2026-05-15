@@ -19,7 +19,7 @@
       :framework-options="frameworkOptions"
       :submitting="isImporting"
       @cancel="cancelImport"
-      @import="importProject"
+      @deploy="deployProject"
       @load-more="loadMoreRepositories"
     />
   </div>
@@ -246,7 +246,7 @@ async function refreshRepositories(showToast = true) {
   }
 }
 
-async function importProject() {
+async function deployProject() {
   if (!selectedRepo.value || isImporting.value) return
   const isManual = selectedRepo.value.provider === "manual"
   const repoUrl = isManual ? form.repoUrl.trim() : selectedRepo.value.repoUrl

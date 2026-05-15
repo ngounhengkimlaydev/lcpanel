@@ -37,7 +37,7 @@
           :framework-options="frameworkOptions"
           :submitting="submitting"
           @cancel="$emit('cancel')"
-          @import="$emit('import')"
+          @deploy="$emit('deploy')"
         />
 
         <GitEmptyState v-else />
@@ -71,7 +71,7 @@ const emit = defineEmits<{
   "update:search": [value: string]
   "update:selectedRepo": [repo: GitRepository | null]
   cancel: []
-  import: []
+  deploy: []
   "load-more": []
 }>()
 

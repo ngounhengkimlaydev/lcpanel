@@ -19,34 +19,52 @@
 </template>
 
 <script setup lang="ts">
-const stats = [
-  {
-    label: 'Total Plans',
-    value: '3',
-    caption: '2 active plans',
-    icon: 'i-lucide-package',
-    color: 'text-success'
-  },
-  {
-    label: 'Subscribed Users',
-    value: '39',
-    caption: '+8 this month',
-    icon: 'i-lucide-users',
-    color: 'text-info'
-  },
-  {
-    label: 'Monthly Revenue',
-    value: '$612',
-    caption: '+14.2% growth',
-    icon: 'i-lucide-credit-card',
-    color: 'text-success'
-  },
-  {
-    label: 'Avg. Plan Price',
-    value: '$23',
-    caption: 'Across active plans',
-    icon: 'i-lucide-chart-no-axes-column',
-    color: 'text-warning'
-  }
-]
+import type { Plan } from '~/types'
+import { formatPlanCurrency } from '~/utils/plan'
+
+const props = defineProps<{
+  plans: Plan[]
+}>()
+
+const stats = computed(() => {
+  const activePlans = props.plans.filter((plan) => plan.status === 1)
+  const disabledPlans = props.plans.filter((plan) => plan.status === 2)
+  const plansWithSsl = props.plans.filter((plan) => plan.ssl).length
+  const monthlyRevenue = activePlans.reduce((sum, plan) => sum + Number(plan.price), 0)
+  const averagePlanPrice =
+    props.plans.length === 0
+      ? 0
+      : props.plans.reduce((sum, plan) => sum + Number(plan.price), 0) / props.plans.length
+
+  return [
+    {
+      label: 'Total Plans',
+      value: props.plans.length,
+      caption: `${activePlans.length} active plans`,
+      icon: 'i-lucide-package',
+      color: 'text-success'
+    },
+    {
+      label: 'Plans With SSL',
+      value: plansWithSsl,
+      caption: `${disabledPlans.length} disabled plans`,
+      icon: 'i-lucide-shield-check',
+      color: 'text-info'
+    },
+    {
+      label: 'Monthly Revenue',
+      value: formatPlanCurrency(monthlyRevenue),
+      caption: 'Potential recurring revenue',
+      icon: 'i-lucide-credit-card',
+      color: 'text-success'
+    },
+    {
+      label: 'Avg. Plan Price',
+      value: formatPlanCurrency(averagePlanPrice),
+      caption: 'Across all plans',
+      icon: 'i-lucide-chart-no-axes-column',
+      color: 'text-warning'
+    }
+  ]
+})
 </script>

@@ -300,6 +300,8 @@ export class AuthService {
     image?: string;
     phone?: string;
     google?: string;
+    role_id?: number;
+    user_type_id?: number;
   }) {
     const customer = await this.prisma.customer.findFirst({
       where: {
@@ -313,6 +315,8 @@ export class AuthService {
         where: { id: customer.id },
         data: {
           name: customer.name || data.name,
+          role_id: customer.role_id || 2,
+          user_type_id: customer.user_type_id || 6,
           email: customer.email || data.email,
           image: customer.image || data.image,
           phone: customer.phone || data.phone || "",
@@ -323,17 +327,39 @@ export class AuthService {
       });
     }
 
-    return this.prisma.customer.create({
+    const startDate = new Date();
+    const endDate = new Date();
+    endDate.setMonth(endDate.getMonth() + 1);
+
+    const newCustomer = await this.prisma.customer.create({
       data: {
         name: data.name,
+        role_id: 2,
+        user_type_id: 6,
         email: data.email,
         image: data.image,
         phone: data.phone ?? "",
         firebase_uid: data.firebaseUid,
         google: data.google,
         status: 1,
+        subscription: {
+          create: {
+            plan_id: 1,
+            start_date: startDate,
+            end_date: endDate,
+            status: 1,
+          },
+        },
+      },
+      include: {
+        subscription: {
+          include: {
+            plan: true,
+          },
+        },
       },
     });
+    return newCustomer;
   }
 
   private createCustomerPayload(customer: {

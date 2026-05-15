@@ -13,7 +13,7 @@
         :model-value="status"
         :items="statusItems"
         class="w-40"
-        @update:model-value="$emit('update:status', String($event))"
+        @update:model-value="$emit('update:status', $event === 'all' ? 'all' : Number($event))"
       />
 
       <UButton icon="i-lucide-filter" color="neutral" variant="outline" />
@@ -23,20 +23,20 @@
 </template>
 
 <script setup lang="ts">
+import { planStatusItems } from '~/utils/plan'
+
 defineProps<{
   search: string
-  status: string
+  status: number | 'all'
 }>()
 
 defineEmits<{
   'update:search': [value: string]
-  'update:status': [value: string]
+  'update:status': [value: number | 'all']
 }>()
 
 const statusItems = [
   { label: 'All Status', value: 'all' },
-  { label: 'Active', value: 'active' },
-  { label: 'Draft', value: 'draft' },
-  { label: 'Disabled', value: 'disabled' }
+  ...planStatusItems
 ]
 </script>

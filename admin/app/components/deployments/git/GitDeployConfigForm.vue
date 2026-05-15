@@ -98,9 +98,9 @@
         icon="i-lucide-download-cloud"
         :loading="submitting"
         :disabled="submitting"
-        @click="$emit('import')"
+        @click="$emit('deploy')"
       >
-        Import Project
+        Deploy Project
       </UButton>
     </div>
   </div>
@@ -122,6 +122,6 @@ defineProps<{
 
 defineEmits<{
   cancel: []
-  import: []
+  deploy: []
 }>()
 </script>

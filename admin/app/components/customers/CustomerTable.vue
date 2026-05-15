@@ -37,6 +37,11 @@ const paginatedCustomers = computed(() => {
   return props.customers.slice(start.value, end.value)
 })
 
+const Status = {
+  ACTIVE: 1,
+  SUSPENDED: 0
+}
+
 watch(
   () => props.customers.length,
   () => {
@@ -65,28 +70,22 @@ const columns: TableColumn<Customer>[] = [
     accessorKey: 'status',
     header: 'Status',
     cell: ({ row }) => {
-      const status = row.original.status
-
-      const colorMap: Record<string, string> = {
-        active: 'success',
-        suspended: 'error',
-        inactive: 'neutral',
-        pending: 'warning'
-      }
+      const status: any = row.original.status
 
       return h(resolveComponent('UBadge'), {
-        color: colorMap[status] || 'neutral',
+        color: status === Status.ACTIVE ? 'success' : 'error',
         variant: 'soft',
         class: 'capitalize'
       }, {
-        default: () => status
+        default: () =>
+          status === Status.ACTIVE ? 'Active' : 'Suspended'
       })
     }
   },
   { accessorKey: 'created_at', header: 'Joined' },
   {
     id: 'actions',
-    header: '',
+    header: 'Actions',
     cell: ({ row }) => {
       const items: DropdownMenuItem[][] = [
         [

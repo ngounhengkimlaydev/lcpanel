@@ -11,8 +11,10 @@
                             <div class="flex space-x-2">
                                 <UButton icon="i-lucide-dices" label="View Subscription Dashboard"
                                     @click="dashboard = true" />
-                                <UButton icon="i-lucide-folder-kanban" label="Create Subscription"
-                                    @click="openCreateModal" />
+                                <UButton icon="i-lucide-refresh-cw" color="neutral" variant="outline"
+                                   />
+                                <!-- <UButton icon="i-lucide-folder-kanban" label="Create Subscription"
+                                    @click="openCreateModal" /> -->
                             </div>
                         </div>
                     </template>

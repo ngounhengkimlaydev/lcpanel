@@ -10,7 +10,8 @@
               </h3>
               <div class="flex space-x-2">
                 <UButton icon="i-lucide-dices" label="View Customer Dashboard" @click="dashboard = true" />
-                <UButton icon="i-lucide-user-plus" label="Add Customer" @click="openCreateModal"/>
+                <UButton icon="i-lucide-refresh-cw" color="neutral" variant="outline" @click="getData" />
+                <!-- <UButton icon="i-lucide-user-plus" label="Add Customer" @click="openCreateModal"/> -->
               </div>
             </div>
           </template>
@@ -42,36 +43,16 @@ definePageMeta({
   moduleKey: moduleKey.CUSTOMER,
 })
 
-
 const search = ref('')
 const status = ref('all')
 const dashboard = ref<boolean>(false)
 const isModalOpen = ref(false)
 const modalType = ref<'create' | 'edit'>('create')
 const selectedCustomer = ref<Customer | null>(null)
+const loading = ref<boolean>(false)
+const fetch = useApiFetch()
 
-const customers = ref<Customer[]>([
-  {
-    id: 1,
-    name: 'LTech Digital',
-    email: 'admin@ltech.digital',
-    plan: 'Business',
-    websites: 3,
-    storage: '12.4 GB',
-    status: 'active',
-    created_at: '2026-05-03'
-  },
-  {
-    id: 2,
-    name: 'Nexora Client',
-    email: 'client@nexora.com',
-    plan: 'Basic',
-    websites: 1,
-    storage: '2.1 GB',
-    status: 'suspended',
-    created_at: '2026-05-01'
-  }
-])
+const customers = ref<Customer[]>([])
 
 const filteredCustomers = computed(() => {
   return customers.value.filter((item) => {
@@ -114,4 +95,15 @@ function handleSubmit(payload: Customer) {
 
   isModalOpen.value = false
 }
+
+const getData = async () => {
+  try {
+    const data = await fetch.paginate('/customer')
+    customers.value = data.data
+  } finally {
+
+  }
+}
+
+onMounted(getData)
 </script>

@@ -22,7 +22,9 @@ export class ServerService {
 
     return {
       cpu: cpu.currentLoad.toFixed(2),
-      cores: cpuInfo.cores,
+      cores: cpuInfo.physicalCores,
+      threads: cpuInfo.cores,
+      virtualization: cpuInfo.virtualization,
 
       ram: ((mem.used / mem.total) * 100).toFixed(2),
       ramUsed: (mem.used / 1024 / 1024 / 1024).toFixed(2),

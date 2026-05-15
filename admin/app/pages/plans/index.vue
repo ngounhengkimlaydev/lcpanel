@@ -9,19 +9,25 @@
                 Hosting Plans
               </h3>
               <div class="flex space-x-2">
+                <UButton icon="i-lucide-refresh-cw" color="neutral" variant="outline" @click="getData" />
                 <UButton icon="i-lucide-dices" label="View Plan Dashboard" @click="dashboard = true" />
                 <UButton icon="i-lucide-package-plus" label="Create Plan" @click="openCreateModal" />
               </div>
             </div>
           </template>
           <PlanToolbar v-model:search="search" v-model:status="status" />
-          <PlanGrid :plans="filteredPlans" @edit="openEditModal" />
+          <PlanGrid
+            :plans="filteredPlans"
+            @edit="openEditModal"
+            @delete="deletePlan"
+            @toggle-status="togglePlanStatus"
+          />
         </UCard>
         <PlanFormModal v-model:open="isModalOpen" :type="modalType" :plan="selectedPlan" @submit="handleSubmit" />
       </div>
-      <USlideover v-model:open="dashboard" title="Plan">
+      <USlideover v-model:open="dashboard" title="Plan Dashboard">
         <template #body>
-          <PlanStats />
+          <PlanStats :plans="plans" />
         </template>
       </USlideover>
     </template>
@@ -29,11 +35,13 @@
 </template>
 
 <script setup lang="ts">
+import ConfirmModal from '~/components/ConfirmModal.vue'
 import PlanGrid from '~/components/plans/PlanGrid.vue'
 import PlanStats from '~/components/plans/PlanStats.vue'
 import PlanToolbar from '~/components/plans/PlanToolbar.vue'
 import PlanFormModal from '~/components/plans/PlanFormModal.vue'
-import type { Plan } from '~/types'
+import type { Plan, PlanStatus } from '~/types'
+import { createDefaultPlan, getPlanTypeLabel } from '~/utils/plan'
 
 definePageMeta({
   middleware: "alc",
@@ -41,57 +49,27 @@ definePageMeta({
 })
 
 const search = ref('')
-const status = ref('all')
+const status = ref<'all' | PlanStatus>('all')
 const dashboard = ref<boolean>(false)
 const isModalOpen = ref(false)
 const modalType = ref<'create' | 'edit'>('create')
 const selectedPlan = ref<Plan | null>(null)
+const fetch = useApiFetch()
+const toast = useToast()
+const overlay = useOverlay()
 
-const plans = ref<Plan[]>([
-  {
-    id: 1,
-    name: 'Basic',
-    price: 5,
-    status: 'active',
-    customers: 24,
-    disk: '3 GB',
-    bandwidth: '50 GB',
-    domains: 1,
-    databases: 1,
-    emails: 3,
-    ssl: true
-  },
-  {
-    id: 2,
-    name: 'Business',
-    price: 15,
-    status: 'active',
-    customers: 12,
-    disk: '10 GB',
-    bandwidth: '200 GB',
-    domains: 5,
-    databases: 5,
-    emails: 20,
-    ssl: true
-  },
-  {
-    id: 3,
-    name: 'Enterprise',
-    price: 49,
-    status: 'draft',
-    customers: 3,
-    disk: '50 GB',
-    bandwidth: '1 TB',
-    domains: 20,
-    databases: 20,
-    emails: 100,
-    ssl: true
-  }
-])
+const plans = ref<Plan[]>([])
 
 const filteredPlans = computed(() => {
+  const keyword = search.value.trim().toLowerCase()
+
   return plans.value.filter((item) => {
-    const matchSearch = item.name.toLowerCase().includes(search.value.toLowerCase())
+    const matchSearch =
+      keyword.length === 0 ||
+      item.name.toLowerCase().includes(keyword) ||
+      item.description.toLowerCase().includes(keyword) ||
+      getPlanTypeLabel(item.type).toLowerCase().includes(keyword)
+
     const matchStatus = status.value === 'all' || item.status === status.value
 
     return matchSearch && matchStatus
@@ -106,25 +84,115 @@ function openCreateModal() {
 
 function openEditModal(plan: Plan) {
   modalType.value = 'edit'
-  selectedPlan.value = plan
+  selectedPlan.value = { ...createDefaultPlan(), ...plan }
   isModalOpen.value = true
 }
 
-function handleSubmit(payload: Plan) {
+function toPlanPayload(plan: Plan) {
+  return {
+    name: plan.name.trim(),
+    description: plan.description.trim(),
+    price: Number(plan.price),
+    cpu: plan.cpu ?? undefined,
+    ram: plan.ram ?? undefined,
+    disk_space: Number(plan.disk_space),
+    domain: Number(plan.domain),
+    email: plan.email ?? undefined,
+    ssl: Boolean(plan.ssl),
+    database: Number(plan.database),
+    website: Number(plan.website),
+    ftp_account: plan.ftp_account ?? undefined,
+    cronjob: plan.cronjob ?? undefined,
+    backup: Boolean(plan.backup),
+    cdn: Boolean(plan.cdn),
+    staging: Boolean(plan.staging),
+    ssh_access: Boolean(plan.ssh_access),
+    docker_support: Boolean(plan.docker_support),
+    bandwidth: Number(plan.bandwidth),
+    type: Number(plan.type),
+    status: Number(plan.status),
+  }
+}
+
+async function handleSubmit(payload: Plan) {
+  const body = toPlanPayload(payload)
+
   if (modalType.value === 'create') {
-    plans.value.unshift({
-      ...payload,
-      id: Date.now(),
-      customers: 0
+    await fetch.post('/plans', body)
+
+    toast.add({
+      title: 'Success',
+      description: 'Plan created successfully',
+      color: 'success'
     })
   } else {
-    const index = plans.value.findIndex((item) => item.id === payload.id)
+    const planId = selectedPlan.value?.id ?? payload.id
 
-    if (index !== -1) {
-      plans.value[index] = payload
-    }
+    await fetch.put(`/plans/${planId}`, body)
+
+    toast.add({
+      title: 'Success',
+      description: 'Plan updated successfully',
+      color: 'success'
+    })
   }
 
   isModalOpen.value = false
+  selectedPlan.value = null
+  await getData()
 }
+
+const getData = async () => {
+  const res = await fetch.paginate('/plans', {
+    page: 1,
+    table_size: 100,
+    sort_by: 'created_at',
+    sort_type: 'desc'
+  }, {}, false)
+
+  plans.value = res?.data ?? []
+}
+
+async function deletePlan(plan: Plan) {
+  const modal = overlay.create(ConfirmModal, {
+    props: {
+      title: 'Delete Plan',
+      description: `Are you sure you want to delete "${plan.name}"?`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      color: 'error'
+    }
+  })
+
+  const instance = modal.open()
+  const confirmed = await instance.result
+
+  if (!confirmed) return
+
+  await fetch.delete(`/plans/${plan.id}`)
+
+  toast.add({
+    title: 'Success',
+    description: 'Plan deleted successfully',
+    color: 'success'
+  })
+
+  await getData()
+}
+
+async function togglePlanStatus(plan: Plan) {
+  const nextStatus: PlanStatus = plan.status === 1 ? 2 : 1
+
+  await fetch.put(`/plans/${plan.id}/status`, { status: nextStatus })
+
+  toast.add({
+    title: 'Success',
+    description: `Plan ${nextStatus === 1 ? 'activated' : 'disabled'} successfully`,
+    color: 'success'
+  })
+
+  await getData()
+}
+
+onMounted(getData)
 </script>

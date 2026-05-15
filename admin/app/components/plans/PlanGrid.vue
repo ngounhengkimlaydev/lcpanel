@@ -6,6 +6,8 @@
         :key="plan.id"
         :plan="plan"
         @edit="emit('edit', $event)"
+        @delete="emit('delete', $event)"
+        @toggle-status="emit('toggle-status', $event)"
       />
     </div>
 
@@ -27,5 +29,7 @@ defineProps<{
 
 const emit = defineEmits<{
   edit: [plan: Plan]
+  delete: [plan: Plan]
+  'toggle-status': [plan: Plan]
 }>()
 </script>
