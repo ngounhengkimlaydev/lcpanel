@@ -1,11 +1,9 @@
 <template>
-    <UCard
-        :ui="{
-            root: 'overflow-visible',
-            header: 'border-b border-default',
-            body: 'p-0'
-        }"
-    >
+    <UCard :ui="{
+        root: 'overflow-visible',
+        header: 'border-b border-default',
+        body: 'p-0'
+    }">
         <template #header>
             <div class="flex items-start justify-between gap-4">
                 <div>
@@ -19,24 +17,15 @@
                 </div>
 
                 <div class="flex items-center gap-2">
-                    <UButton
-                        color="neutral"
-                        variant="outline"
-                        icon="i-lucide-upload"
-                        label="Share"
-                    />
+                    <UButton color="neutral" variant="outline" icon="i-lucide-upload" label="Share" />
 
-                    <UButton
-                        color="neutral"
-                        variant="ghost"
-                        icon="i-lucide-ellipsis"
-                    />
+                    <UButton color="neutral" variant="ghost" icon="i-lucide-ellipsis" />
                 </div>
             </div>
         </template>
 
         <div class="grid lg:grid-cols-[420px_1fr]">
-            <div class="border-b border-default px-6 py-5 lg:col-span-2">
+            <!-- <div class="border-b border-default px-6 py-5 lg:col-span-2">
                 <div class="mb-4 flex items-center justify-between gap-3">
                     <div>
                         <h2 class="text-lg font-bold text-highlighted">
@@ -96,16 +85,14 @@
                     ref="loadMoreTrigger"
                     class="h-1"
                 />
-            </div>
+            </div> -->
 
             <!-- Website Preview -->
             <div>
                 <div class="relative h-65 overflow-hidden rounded-xl border border-default bg-muted shadow-sm">
-                    <iframe
-                        :src="selectedDeployment.deploy_url"
+                    <iframe :src="selectedDeployment.deploy_url"
                         class="absolute left-0 top-0 h-[720px] w-[1280px] origin-top-left scale-[0.33] border-0"
-                        loading="lazy"
-                    />
+                        loading="lazy" />
                 </div>
             </div>
 
@@ -119,10 +106,7 @@
                             </p>
 
                             <div class="flex items-center gap-3">
-                                <UAvatar
-                                    src="https://github.com/ngounhengkimlay.png"
-                                    size="lg"
-                                />
+                                <UAvatar src="https://github.com/ngounhengkimlay.png" size="lg" />
 
                                 <div class="flex flex-wrap items-center gap-2">
                                     <span class="font-semibold text-highlighted">
@@ -142,10 +126,7 @@
                             </p>
 
                             <div class="flex items-center gap-3">
-                                <UIcon
-                                    name="i-lucide-clock-3"
-                                    class="size-6 text-muted"
-                                />
+                                <UIcon name="i-lucide-clock-3" class="size-6 text-muted" />
 
                                 <div class="flex items-center gap-2">
                                     <span class="font-semibold text-highlighted">
@@ -162,20 +143,13 @@
 
                             <div class="space-y-3">
                                 <div class="flex items-center gap-3">
-                                    <UIcon
-                                        name="i-lucide-globe"
-                                        class="size-6 text-muted"
-                                    />
+                                    <UIcon name="i-lucide-globe" class="size-6 text-muted" />
 
                                     <span class="font-medium text-highlighted">
                                         {{ selectedDeployment.domain }}
                                     </span>
 
-                                    <UBadge
-                                        label="Live"
-                                        color="success"
-                                        variant="soft"
-                                    />
+                                    <UBadge label="Live" color="success" variant="soft" />
                                 </div>
                             </div>
                         </div>
@@ -188,10 +162,7 @@
                             </p>
 
                             <div class="flex items-center gap-3">
-                                <span
-                                    class="size-3 rounded-full"
-                                    :class="statusDotClass"
-                                />
+                                <span class="size-3 rounded-full" :class="statusDotClass" />
 
                                 <span class="font-semibold text-highlighted">
                                     {{ statusLabel }}
@@ -207,20 +178,13 @@
                             </p>
 
                             <div class="flex items-center gap-3">
-                                <UIcon
-                                    name="i-lucide-arrow-up-circle"
-                                    class="size-6 text-muted"
-                                />
+                                <UIcon name="i-lucide-arrow-up-circle" class="size-6 text-muted" />
 
                                 <span class="font-semibold text-highlighted">
                                     {{ selectedDeployment.packagePlan }}
                                 </span>
 
-                                <UBadge
-                                    label="Current"
-                                    color="primary"
-                                    variant="soft"
-                                />
+                                <UBadge label="Current" color="primary" variant="soft" />
                             </div>
                         </div>
 
@@ -231,10 +195,7 @@
 
                             <div class="space-y-3">
                                 <div class="flex items-center gap-3">
-                                    <UIcon
-                                        name="i-lucide-git-branch"
-                                        class="size-6 text-muted"
-                                    />
+                                    <UIcon name="i-lucide-git-branch" class="size-6 text-muted" />
 
                                     <span class="font-medium text-highlighted">
                                         {{ selectedDeployment.branch }}
@@ -242,10 +203,7 @@
                                 </div>
 
                                 <div class="flex items-center gap-3">
-                                    <UIcon
-                                        name="i-lucide-git-commit-horizontal"
-                                        class="size-6 text-muted"
-                                    />
+                                    <UIcon name="i-lucide-git-commit-horizontal" class="size-6 text-muted" />
 
                                     <span class="font-medium text-highlighted">
                                         {{ selectedDeployment.commit }}
@@ -262,16 +220,10 @@
             <!-- System Environment -->
             <UCollapsible class="flex w-full flex-col gap-2">
                 <template #default="{ open }">
-                    <UButton
-                        color="neutral"
-                        variant="ghost"
-                        size="xl"
-                        block
-                        :trailing-icon="open ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
-                        :ui="{
+                    <UButton color="neutral" variant="ghost" size="xl" block
+                        :trailing-icon="open ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'" :ui="{
                             base: 'border-0 bg-transparent px-0 shadow-none ring-0 hover:bg-transparent'
-                        }"
-                    >
+                        }">
                         <div class="flex w-full items-center justify-between">
                             <span class="font-semibold text-highlighted">
                                 System Environments
@@ -348,11 +300,8 @@
 
                             <div>
                                 <p class="text-sm text-muted">Status</p>
-                                <UBadge
-                                    :label="statusLabel"
-                                    :color="getStatusColor(selectedDeployment.status)"
-                                    variant="soft"
-                                />
+                                <UBadge :label="statusLabel" :color="getStatusColor(selectedDeployment.status)"
+                                    variant="soft" />
                             </div>
                         </div>
                     </div>
@@ -360,18 +309,12 @@
             </UCollapsible>
 
             <!-- Build Logs -->
-            <UCollapsible class="w-full">
+            <UCollapsible v-model:open="open" class="w-full">
                 <template #default="{ open }">
-                    <UButton
-                        color="neutral"
-                        variant="ghost"
-                        size="xl"
-                        block
-                        :trailing-icon="open ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
-                        :ui="{
+                    <UButton color="neutral" variant="ghost" size="xl" block
+                        :trailing-icon="open ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'" :ui="{
                             base: 'border-0 bg-transparent shadow-none ring-0 hover:bg-transparent px-0'
-                        }"
-                    >
+                        }">
                         <div class="flex w-full items-center justify-between">
                             <span class="font-semibold text-highlighted">
                                 Build Logs
@@ -678,4 +621,10 @@ function getStatusColor(status: BuildStatus | string) {
             return 'neutral'
     }
 }
+
+const open = ref(true)
+
+defineShortcuts({
+  o: () => open.value = !open.value
+})
 </script>
