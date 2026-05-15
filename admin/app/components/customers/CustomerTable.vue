@@ -1,17 +1,19 @@
 <template>
   <UCard class="space-y-4 mt-5">
-    <UTable :data="paginatedCustomers" :columns="columns" class="h-screen">
-      <template #empty v-if="!customers.length" class="py-12 text-center">
-        <UIcon name="i-lucide-users" class="mx-auto mb-3 size-10 text-muted" />
-        <p class="font-medium text-highlighted">No customers found</p>
-        <p class="text-sm text-muted">Try changing your filter or search.</p>
+    <UTable :data="customers" :columns="columns" class="h-screen">
+      <template #empty>
+        <div v-if="!customers.length" class="py-12 text-center">
+          <UIcon name="i-lucide-users" class="mx-auto mb-3 size-10 text-muted" />
+          <p class="font-medium text-highlighted">No customers found</p>
+          <p class="text-sm text-muted">Try changing your filter or search.</p>
+        </div>
       </template>
     </UTable>
-    <div v-if="customers.length" class="flex items-center justify-between border-t border-default px-4 py-3">
+    <div v-if="total" class="flex items-center justify-between border-t border-default px-4 py-3">
       <p class="text-sm text-muted">
-        Showing {{ start + 1 }}-{{ end }} of {{ customers.length }}
+        Showing {{ startItem }}-{{ endItem }} of {{ total }}
       </p>
-      <UPagination v-model:page="page" :total="customers.length" :items-per-page="pageSize" />
+      <UPagination :page="page" :items-per-page="pageSize" :total="total" @update:page="emit('update:page', $event)" />
     </div>
   </UCard>
 </template>
@@ -19,35 +21,46 @@
 <script setup lang="ts">
 import type { DropdownMenuItem, TableColumn } from '@nuxt/ui'
 import type { Customer } from '~/types';
+
 const emit = defineEmits<{
   edit: [customer: Customer]
+  'update:page': [page: number]
 }>()
 
 const props = defineProps<{
   customers: Customer[]
+  total: number
+  page: number
+  pageSize: number
 }>()
 
-const page = ref(1)
-const pageSize = ref(10)
-
-const start = computed(() => (page.value - 1) * pageSize.value)
-const end = computed(() => Math.min(start.value + pageSize.value, props.customers.length))
-
-const paginatedCustomers = computed(() => {
-  return props.customers.slice(start.value, end.value)
-})
-
 const Status = {
+  INACTIVE: 0,
   ACTIVE: 1,
-  SUSPENDED: 0
+  DISABLED: 2,
 }
 
-watch(
-  () => props.customers.length,
-  () => {
-    page.value = 1
+const startItem = computed(() => {
+  if (!props.total) return 0
+  return (props.page - 1) * props.pageSize + 1
+})
+
+const endItem = computed(() => {
+  return Math.min(props.page * props.pageSize, props.total)
+})
+
+function getStatusMeta(status: Customer['status']) {
+  switch (status) {
+    case Status.ACTIVE:
+      return { color: 'success' as const, label: 'Active' }
+    case Status.INACTIVE:
+      return { color: 'warning' as const, label: 'Inactive' }
+    case Status.DISABLED:
+      return { color: 'error' as const, label: 'Disabled' }
+    default:
+      return { color: 'neutral' as const, label: 'Unknown' }
   }
-)
+}
 
 const columns: TableColumn<Customer>[] = [
   {
@@ -59,7 +72,7 @@ const columns: TableColumn<Customer>[] = [
       }, row.original.name.charAt(0)),
       h('div', {}, [
         h('p', { class: 'font-medium text-highlighted' }, row.original.name),
-        h('p', { class: 'text-sm text-muted' }, row.original.email)
+        h('p', { class: 'text-sm text-muted' }, row.original.email ?? '-')
       ])
     ])
   },
@@ -70,15 +83,14 @@ const columns: TableColumn<Customer>[] = [
     accessorKey: 'status',
     header: 'Status',
     cell: ({ row }) => {
-      const status: any = row.original.status
+      const status = getStatusMeta(row.original.status)
 
       return h(resolveComponent('UBadge'), {
-        color: status === Status.ACTIVE ? 'success' : 'error',
+        color: status.color,
         variant: 'soft',
         class: 'capitalize'
       }, {
-        default: () =>
-          status === Status.ACTIVE ? 'Active' : 'Suspended'
+        default: () => status.label
       })
     }
   },
@@ -90,11 +102,11 @@ const columns: TableColumn<Customer>[] = [
       const items: DropdownMenuItem[][] = [
         [
           { label: 'View', icon: 'i-lucide-eye' },
-          {
-            label: 'Edit',
-            icon: 'i-lucide-pencil',
-            onSelect: () => emit('edit', row.original)
-          },
+          // {
+          //   label: 'Edit',
+          //   icon: 'i-lucide-pencil',
+          //   onSelect: () => emit('edit', row.original)
+          // },
           { label: 'Suspend', icon: 'i-lucide-ban' }
         ]
       ]

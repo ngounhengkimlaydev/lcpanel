@@ -39,7 +39,7 @@ export class CustomerRepository {
   async paginate(params: {
     page: number;
     tableSize: number;
-    filter?: { search?: string };
+    filter?: { search?: string; status?: number | string };
     sortBy?: string;
     sortType?: "asc" | "desc";
   }) {
@@ -58,13 +58,27 @@ export class CustomerRepository {
       const keyword = filter.search.trim();
 
       where.OR = [
-        // Add searchable fields here
-        // {
-        //     name: {
-        //         contains: keyword,
-        //     },
-        // },
+        {
+          name: {
+            contains: keyword,
+            mode: "insensitive",
+          },
+        },
+        {
+          email: {
+            contains: keyword,
+            mode: "insensitive",
+          },
+        },
       ];
+    }
+
+    if (
+      filter?.status !== undefined &&
+      filter.status !== null &&
+      String(filter.status).trim() !== ""
+    ) {
+      where.status = Number(filter.status);
     }
 
     const [data, total] = await Promise.all([

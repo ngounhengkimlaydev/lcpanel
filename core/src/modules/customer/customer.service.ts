@@ -26,7 +26,7 @@ export class CustomerService {
   async findAll(params: {
     page?: number;
     tableSize?: number;
-    filter?: { search?: string };
+    filter?: { search?: string; status?: number | string };
     sortBy?: string;
     sortType?: "asc" | "desc";
   }) {

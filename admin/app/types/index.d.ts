@@ -106,14 +106,16 @@ export type UserType = {
   created_at?: string;
 };
 
+export type CustomerStatus = 0 | 1 | 2;
+
 export type Customer = {
   id: number;
   name: string;
-  email: string;
+  email: string | null;
   plan: string;
   websites: number;
-  storage: string;
-  status: string;
+  storage: number;
+  status: CustomerStatus;
   created_at: string;
 };
 

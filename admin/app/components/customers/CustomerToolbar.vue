@@ -3,7 +3,7 @@
     <UInput
       :model-value="search"
       icon="i-lucide-search"
-      placeholder="Search invoice or customer..."
+      placeholder="Search customer..."
       class="w-full sm:max-w-sm"
       @update:model-value="$emit('update:search', String($event))"
     />
@@ -30,8 +30,8 @@ defineEmits<{
 
 const statusItems = [
   { label: 'All', value: 'all' },
-  { label: 'Paid', value: 'paid' },
-  { label: 'Unpaid', value: 'unpaid' },
-  { label: 'Overdue', value: 'overdue' }
+  { label: 'Active', value: '1' },
+  { label: 'Inactive', value: '0' },
+  { label: 'Disabled', value: '2' }
 ]
 </script>
