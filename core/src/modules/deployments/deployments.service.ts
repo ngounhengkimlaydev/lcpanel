@@ -50,19 +50,21 @@ export class DeployService {
     private readonly repository: DeploymentsRepository,
     private readonly serverGateway: ServerGateway,
   ) {
-    this.appsPath = this.config.get<string>("LCPANEL_APPS_PATH") || "";
+    this.appsPath =
+      this.config.get<string>("LCPANEL_APPS_PATH")?.trim() ||
+      resolve(process.cwd(), "..", "lcpanel-apps");
     this.buildLogsPath =
-      this.config.get<string>("DEPLOY_BUILD_LOGS_PATH") ||
-      join(this.appsPath || process.cwd(), ".lcpanel", "build-logs");
+      this.config.get<string>("DEPLOY_BUILD_LOGS_PATH")?.trim() ||
+      join(this.appsPath, ".lcpanel", "build-logs");
     this.nginxSitesAvailablePath =
-      this.config.get<string>("NGINX_SITES_AVAILABLE_PATH") ||
+      this.config.get<string>("NGINX_SITES_AVAILABLE_PATH")?.trim() ||
       "/etc/nginx/sites-available";
     this.nginxSitesEnabledPath =
-      this.config.get<string>("NGINX_SITES_ENABLED_PATH") ||
+      this.config.get<string>("NGINX_SITES_ENABLED_PATH")?.trim() ||
       "/etc/nginx/sites-enabled";
     this.nginxStagePath =
-      this.config.get<string>("DEPLOY_NGINX_STAGE_PATH") ||
-      join(this.appsPath || process.cwd(), ".lcpanel", "nginx");
+      this.config.get<string>("DEPLOY_NGINX_STAGE_PATH")?.trim() ||
+      join(this.appsPath, ".lcpanel", "nginx");
     this.deployNginxUseSudo = this.isEnabled(
       this.config.get<string>("DEPLOY_NGINX_USE_SUDO"),
     );
