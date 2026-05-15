@@ -78,9 +78,21 @@ storage/
 # =========================
 *.pem
 *.key
+*.p12
+*.crt
 *-firebase-adminsdk-*.json
+*firebase-adminsdk*.json
+service-account*.json
 id_rsa
 id_rsa.pub
+
+# =========================
+# Secrets / Local deployment
+# =========================
+secrets/
+.lcpanel/
+.lcpanel-deploy.json
+*.pid
 
 # =========================
 # Docker
